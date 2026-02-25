@@ -10,3 +10,7 @@ browser_profile/
 last_session_logs.txt
 reports/
 *.txt
+__pycache__/
+.venv/
+.ruff_cache/
+npm_output.log
