@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from enum import Enum
 from functools import cache
 from pathlib import Path
-from typing import Annotated, Any, Literal, Self
+from typing import Annotated, Any, Literal, Self, TypedDict
 from urllib.parse import urlparse
 
 from pydantic import AfterValidator, AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -301,6 +301,34 @@ CliArgStr = Annotated[str, AfterValidator(validate_cli_arg)]
 # ===== Base Models =====
 
 
+class StorageStateCookie(TypedDict, total=False):
+	name: str
+	value: str
+	url: str
+	domain: str
+	path: str
+	expires: float
+	httpOnly: bool
+	secure: bool
+	sameSite: Literal['Strict', 'Lax', 'None']
+
+
+class StorageStateEntry(TypedDict):
+	name: str
+	value: str
+
+
+class StorageStateOrigin(TypedDict, total=False):
+	origin: str
+	localStorage: list[StorageStateEntry]
+	sessionStorage: list[StorageStateEntry]
+
+
+class StorageState(TypedDict, total=False):
+	cookies: list[StorageStateCookie]
+	origins: list[StorageStateOrigin]
+
+
 class BrowserContextArgs(BaseModel):
 	"""
 	Base model for common browser context parameters used by
@@ -472,8 +500,7 @@ class BrowserNewContextArgs(BrowserContextArgs):
 	model_config = ConfigDict(extra='ignore', validate_assignment=False, revalidate_instances='always', populate_by_name=True)
 
 	# storage_state is not supported in launch_persistent_context()
-	storage_state: str | Path | dict[str, Any] | None = None
-	# TODO: use StorageState type instead of dict[str, Any]
+	storage_state: str | Path | StorageState | None = None
 
 	# to apply this to existing contexts (incl cookies, localStorage, IndexedDB), see:
 	# - https://github.com/microsoft/playwright/pull/34591/files
