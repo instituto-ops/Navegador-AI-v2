@@ -1,16 +1,17 @@
+import asyncio
+import json
+import logging
+import os
+import time
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import asyncio
-import time
-import logging
-import json
-import os
-from dotenv import load_dotenv
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 # browser-use imports
-from browser_use import Agent, Browser, ChatGroq, ChatMistral, ChatOpenAI, BrowserProfile
+from browser_use import Agent, Browser, BrowserProfile, ChatGroq, ChatOpenAI
 
 # Carregar variáveis de ambiente
 load_dotenv()
