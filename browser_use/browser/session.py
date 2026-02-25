@@ -513,7 +513,12 @@ class BrowserSession(BaseModel):
 	_security_watchdog: Any | None = PrivateAttr(default=None)
 	_storage_state_watchdog: Any | None = PrivateAttr(default=None)
 	_local_browser_watchdog: Any | None = PrivateAttr(default=None)
-	_default_action_watchdog: Any | None = PrivateAttr(default=None)
+	_click_watchdog: Any | None = PrivateAttr(default=None)
+	_input_watchdog: Any | None = PrivateAttr(default=None)
+	_scroll_watchdog: Any | None = PrivateAttr(default=None)
+	_navigation_watchdog: Any | None = PrivateAttr(default=None)
+	_element_action_watchdog: Any | None = PrivateAttr(default=None)
+	_wait_watchdog: Any | None = PrivateAttr(default=None)
 	_dom_watchdog: Any | None = PrivateAttr(default=None)
 	_screenshot_watchdog: Any | None = PrivateAttr(default=None)
 	_permissions_watchdog: Any | None = PrivateAttr(default=None)
@@ -595,7 +600,12 @@ class BrowserSession(BaseModel):
 		self._security_watchdog = None
 		self._storage_state_watchdog = None
 		self._local_browser_watchdog = None
-		self._default_action_watchdog = None
+		self._click_watchdog = None
+		self._input_watchdog = None
+		self._scroll_watchdog = None
+		self._navigation_watchdog = None
+		self._element_action_watchdog = None
+		self._wait_watchdog = None
 		self._dom_watchdog = None
 		self._screenshot_watchdog = None
 		self._permissions_watchdog = None
@@ -1493,19 +1503,24 @@ class BrowserSession(BaseModel):
 
 		from browser_use.browser.watchdogs.aboutblank_watchdog import AboutBlankWatchdog
 		from browser_use.browser.watchdogs.captcha_watchdog import CaptchaWatchdog
+		from browser_use.browser.watchdogs.click_watchdog import ClickWatchdog
 
 		# from browser_use.browser.crash_watchdog import CrashWatchdog
-		from browser_use.browser.watchdogs.default_action_watchdog import DefaultActionWatchdog
 		from browser_use.browser.watchdogs.dom_watchdog import DOMWatchdog
 		from browser_use.browser.watchdogs.downloads_watchdog import DownloadsWatchdog
+		from browser_use.browser.watchdogs.element_action_watchdog import ElementActionWatchdog
 		from browser_use.browser.watchdogs.har_recording_watchdog import HarRecordingWatchdog
+		from browser_use.browser.watchdogs.input_watchdog import InputWatchdog
 		from browser_use.browser.watchdogs.local_browser_watchdog import LocalBrowserWatchdog
+		from browser_use.browser.watchdogs.navigation_watchdog import NavigationWatchdog
 		from browser_use.browser.watchdogs.permissions_watchdog import PermissionsWatchdog
 		from browser_use.browser.watchdogs.popups_watchdog import PopupsWatchdog
 		from browser_use.browser.watchdogs.recording_watchdog import RecordingWatchdog
 		from browser_use.browser.watchdogs.screenshot_watchdog import ScreenshotWatchdog
+		from browser_use.browser.watchdogs.scroll_watchdog import ScrollWatchdog
 		from browser_use.browser.watchdogs.security_watchdog import SecurityWatchdog
 		from browser_use.browser.watchdogs.storage_state_watchdog import StorageStateWatchdog
+		from browser_use.browser.watchdogs.wait_watchdog import WaitWatchdog
 
 		# Initialize CrashWatchdog
 		# CrashWatchdog.model_rebuild()
@@ -1585,20 +1600,35 @@ class BrowserSession(BaseModel):
 		# self.event_bus.on(BrowserConnectedEvent, self._permissions_watchdog.on_BrowserConnectedEvent)
 		self._permissions_watchdog.attach_to_session()
 
-		# Initialize DefaultActionWatchdog (handles all default actions like click, type, scroll, go back, go forward, refresh, wait, send keys, upload file, scroll to text, etc.)
-		DefaultActionWatchdog.model_rebuild()
-		self._default_action_watchdog = DefaultActionWatchdog(event_bus=self.event_bus, browser_session=self)
-		# self.event_bus.on(ClickElementEvent, self._default_action_watchdog.on_ClickElementEvent)
-		# self.event_bus.on(TypeTextEvent, self._default_action_watchdog.on_TypeTextEvent)
-		# self.event_bus.on(ScrollEvent, self._default_action_watchdog.on_ScrollEvent)
-		# self.event_bus.on(GoBackEvent, self._default_action_watchdog.on_GoBackEvent)
-		# self.event_bus.on(GoForwardEvent, self._default_action_watchdog.on_GoForwardEvent)
-		# self.event_bus.on(RefreshEvent, self._default_action_watchdog.on_RefreshEvent)
-		# self.event_bus.on(WaitEvent, self._default_action_watchdog.on_WaitEvent)
-		# self.event_bus.on(SendKeysEvent, self._default_action_watchdog.on_SendKeysEvent)
-		# self.event_bus.on(UploadFileEvent, self._default_action_watchdog.on_UploadFileEvent)
-		# self.event_bus.on(ScrollToTextEvent, self._default_action_watchdog.on_ScrollToTextEvent)
-		self._default_action_watchdog.attach_to_session()
+		# Initialize ClickWatchdog
+		ClickWatchdog.model_rebuild()
+		self._click_watchdog = ClickWatchdog(event_bus=self.event_bus, browser_session=self)
+		self._click_watchdog.attach_to_session()
+
+		# Initialize InputWatchdog
+		InputWatchdog.model_rebuild()
+		self._input_watchdog = InputWatchdog(event_bus=self.event_bus, browser_session=self)
+		self._input_watchdog.attach_to_session()
+
+		# Initialize ScrollWatchdog
+		ScrollWatchdog.model_rebuild()
+		self._scroll_watchdog = ScrollWatchdog(event_bus=self.event_bus, browser_session=self)
+		self._scroll_watchdog.attach_to_session()
+
+		# Initialize NavigationWatchdog
+		NavigationWatchdog.model_rebuild()
+		self._navigation_watchdog = NavigationWatchdog(event_bus=self.event_bus, browser_session=self)
+		self._navigation_watchdog.attach_to_session()
+
+		# Initialize ElementActionWatchdog
+		ElementActionWatchdog.model_rebuild()
+		self._element_action_watchdog = ElementActionWatchdog(event_bus=self.event_bus, browser_session=self)
+		self._element_action_watchdog.attach_to_session()
+
+		# Initialize WaitWatchdog
+		WaitWatchdog.model_rebuild()
+		self._wait_watchdog = WaitWatchdog(event_bus=self.event_bus, browser_session=self)
+		self._wait_watchdog.attach_to_session()
 
 		# Initialize ScreenshotWatchdog (handles taking screenshots of the browser)
 		ScreenshotWatchdog.model_rebuild()
