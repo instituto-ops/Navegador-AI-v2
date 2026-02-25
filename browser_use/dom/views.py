@@ -898,8 +898,8 @@ class EnhancedDOMTreeNode:
 
 	def _get_parent_branch_path(self) -> list[str]:
 		"""Get the parent branch path as a list of tag names from root to current element."""
-		parents: list['EnhancedDOMTreeNode'] = []
-		current_element: 'EnhancedDOMTreeNode | None' = self
+		parents: list[EnhancedDOMTreeNode] = []
+		current_element: EnhancedDOMTreeNode | None = self
 
 		while current_element is not None:
 			if current_element.node_type == NodeType.ELEMENT_NODE:

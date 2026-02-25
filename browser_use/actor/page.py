@@ -46,14 +46,14 @@ class Page:
 		self._client = browser_session.cdp_client
 		self._target_id = target_id
 		self._session_id: str | None = session_id
-		self._mouse: 'Mouse | None' = None
+		self._mouse: Mouse | None = None
 
 		self._llm = llm
 
 	async def _ensure_session(self) -> str:
 		"""Ensure we have a session ID for this target."""
 		if not self._session_id:
-			params: 'AttachToTargetParameters' = {'targetId': self._target_id, 'flatten': True}
+			params: AttachToTargetParameters = {'targetId': self._target_id, 'flatten': True}
 			result = await self._client.send.Target.attachToTarget(params)
 			self._session_id = result['sessionId']
 
@@ -133,7 +133,7 @@ class Page:
 		# Debug: log the actual expression being evaluated
 		logger.debug(f'Evaluating JavaScript: {repr(expression)}')
 
-		params: 'EvaluateParameters' = {'expression': expression, 'returnByValue': True, 'awaitPromise': True}
+		params: EvaluateParameters = {'expression': expression, 'returnByValue': True, 'awaitPromise': True}
 		result = await self._client.send.Runtime.evaluate(
 			params,
 			session_id=session_id,
@@ -201,7 +201,7 @@ class Page:
 		"""
 		session_id = await self._ensure_session()
 
-		params: 'CaptureScreenshotParameters' = {'format': format}
+		params: CaptureScreenshotParameters = {'format': format}
 
 		if quality is not None and format.lower() == 'jpeg':
 			params['quality'] = quality
@@ -229,14 +229,14 @@ class Page:
 			# Press modifier keys
 			for mod in modifiers:
 				code, vk_code = get_key_info(mod)
-				params: 'DispatchKeyEventParameters' = {'type': 'keyDown', 'key': mod, 'code': code}
+				params: DispatchKeyEventParameters = {'type': 'keyDown', 'key': mod, 'code': code}
 				if vk_code is not None:
 					params['windowsVirtualKeyCode'] = vk_code
 				await self._client.send.Input.dispatchKeyEvent(params, session_id=session_id)
 
 			# Press main key with modifiers bitmask
 			main_code, main_vk_code = get_key_info(main_key)
-			main_down_params: 'DispatchKeyEventParameters' = {
+			main_down_params: DispatchKeyEventParameters = {
 				'type': 'keyDown',
 				'key': main_key,
 				'code': main_code,
@@ -246,7 +246,7 @@ class Page:
 				main_down_params['windowsVirtualKeyCode'] = main_vk_code
 			await self._client.send.Input.dispatchKeyEvent(main_down_params, session_id=session_id)
 
-			main_up_params: 'DispatchKeyEventParameters' = {
+			main_up_params: DispatchKeyEventParameters = {
 				'type': 'keyUp',
 				'key': main_key,
 				'code': main_code,
@@ -259,19 +259,19 @@ class Page:
 			# Release modifier keys
 			for mod in reversed(modifiers):
 				code, vk_code = get_key_info(mod)
-				release_params: 'DispatchKeyEventParameters' = {'type': 'keyUp', 'key': mod, 'code': code}
+				release_params: DispatchKeyEventParameters = {'type': 'keyUp', 'key': mod, 'code': code}
 				if vk_code is not None:
 					release_params['windowsVirtualKeyCode'] = vk_code
 				await self._client.send.Input.dispatchKeyEvent(release_params, session_id=session_id)
 		else:
 			# Simple key press
 			code, vk_code = get_key_info(key)
-			key_down_params: 'DispatchKeyEventParameters' = {'type': 'keyDown', 'key': key, 'code': code}
+			key_down_params: DispatchKeyEventParameters = {'type': 'keyDown', 'key': key, 'code': code}
 			if vk_code is not None:
 				key_down_params['windowsVirtualKeyCode'] = vk_code
 			await self._client.send.Input.dispatchKeyEvent(key_down_params, session_id=session_id)
 
-			key_up_params: 'DispatchKeyEventParameters' = {'type': 'keyUp', 'key': key, 'code': code}
+			key_up_params: DispatchKeyEventParameters = {'type': 'keyUp', 'key': key, 'code': code}
 			if vk_code is not None:
 				key_up_params['windowsVirtualKeyCode'] = vk_code
 			await self._client.send.Input.dispatchKeyEvent(key_up_params, session_id=session_id)
@@ -280,7 +280,7 @@ class Page:
 		"""Set the viewport size."""
 		session_id = await self._ensure_session()
 
-		params: 'SetDeviceMetricsOverrideParameters' = {
+		params: SetDeviceMetricsOverrideParameters = {
 			'width': width,
 			'height': height,
 			'deviceScaleFactor': 1.0,
@@ -294,7 +294,7 @@ class Page:
 	# Target properties (from CDP getTargetInfo)
 	async def get_target_info(self) -> 'TargetInfo':
 		"""Get target information."""
-		params: 'GetTargetInfoParameters' = {'targetId': self._target_id}
+		params: GetTargetInfoParameters = {'targetId': self._target_id}
 		result = await self._client.send.Target.getTargetInfo(params)
 		return result['targetInfo']
 
@@ -312,7 +312,7 @@ class Page:
 		"""Navigate this target to a URL."""
 		session_id = await self._ensure_session()
 
-		params: 'NavigateParameters' = {'url': url}
+		params: NavigateParameters = {'url': url}
 		await self._client.send.Page.navigate(params, session_id=session_id)
 
 	async def navigate(self, url: str) -> None:
@@ -335,7 +335,7 @@ class Page:
 
 			# Navigate to the previous entry
 			previous_entry_id = entries[current_index - 1]['id']
-			params: 'NavigateToHistoryEntryParameters' = {'entryId': previous_entry_id}
+			params: NavigateToHistoryEntryParameters = {'entryId': previous_entry_id}
 			await self._client.send.Page.navigateToHistoryEntry(params, session_id=session_id)
 
 		except Exception as e:
@@ -357,7 +357,7 @@ class Page:
 
 			# Navigate to the next entry
 			next_entry_id = entries[current_index + 1]['id']
-			params: 'NavigateToHistoryEntryParameters' = {'entryId': next_entry_id}
+			params: NavigateToHistoryEntryParameters = {'entryId': next_entry_id}
 			await self._client.send.Page.navigateToHistoryEntry(params, session_id=session_id)
 
 		except Exception as e:
@@ -373,7 +373,7 @@ class Page:
 		document_node_id = doc_result['root']['nodeId']
 
 		# Query selector all
-		query_params: 'QuerySelectorAllParameters' = {'nodeId': document_node_id, 'selector': selector}
+		query_params: QuerySelectorAllParameters = {'nodeId': document_node_id, 'selector': selector}
 		result = await self._client.send.DOM.querySelectorAll(query_params, session_id=session_id)
 
 		elements = []
@@ -382,7 +382,7 @@ class Page:
 		# Convert node IDs to backend node IDs
 		for node_id in result['nodeIds']:
 			# Get backend node ID
-			describe_params: 'DescribeNodeParameters' = {'nodeId': node_id}
+			describe_params: DescribeNodeParameters = {'nodeId': node_id}
 			node_result = await self._client.send.DOM.describeNode(describe_params, session_id=session_id)
 			backend_node_id = node_result['node']['backendNodeId']
 			elements.append(Element_(self._browser_session, backend_node_id, session_id))

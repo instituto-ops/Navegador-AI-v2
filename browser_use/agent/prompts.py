@@ -125,8 +125,8 @@ class AgentMessagePrompt:
 		unavailable_skills_info: str | None = None,
 		plan_description: str | None = None,
 	):
-		self.browser_state: 'BrowserStateSummary' = browser_state_summary
-		self.file_system: 'FileSystem | None' = file_system
+		self.browser_state: BrowserStateSummary = browser_state_summary
+		self.file_system: FileSystem | None = file_system
 		self.agent_history_description: str | None = agent_history_description
 		self.read_state_description: str | None = read_state_description
 		self.task: str | None = task

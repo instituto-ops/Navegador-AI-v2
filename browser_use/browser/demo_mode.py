@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from typing import Any
 
 from browser_use.browser.session import BrowserSession
@@ -865,7 +865,7 @@ class DemoMode:
 			'message': message,
 			'level': level_value,
 			'metadata': metadata or {},
-			'timestamp': datetime.now(timezone.utc).isoformat(),
+			'timestamp': datetime.now(UTC).isoformat(),
 		}
 
 		script = self._build_event_expression(json.dumps(payload, ensure_ascii=False))

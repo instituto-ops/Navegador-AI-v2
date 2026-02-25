@@ -1,6 +1,6 @@
 """Shared utilities for CLI command handlers."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 from browser_use_sdk import BrowserUse
 
@@ -27,7 +27,7 @@ def format_duration(started_at: datetime | None, finished_at: datetime | None) -
 		if finished_at:
 			end = finished_at
 		else:
-			end = datetime.now(timezone.utc)
+			end = datetime.now(UTC)
 
 		delta = end - started_at
 		total_seconds = int(delta.total_seconds())

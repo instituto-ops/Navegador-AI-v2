@@ -75,14 +75,14 @@ class Element:
 
 	async def _get_node_id(self) -> int:
 		"""Get DOM node ID from backend node ID."""
-		params: 'PushNodesByBackendIdsToFrontendParameters' = {'backendNodeIds': [self._backend_node_id]}
+		params: PushNodesByBackendIdsToFrontendParameters = {'backendNodeIds': [self._backend_node_id]}
 		result = await self._client.send.DOM.pushNodesByBackendIdsToFrontend(params, session_id=self._session_id)
 		return result['nodeIds'][0]
 
 	async def _get_remote_object_id(self) -> str | None:
 		"""Get remote object ID for this element."""
 		node_id = await self._get_node_id()
-		params: 'ResolveNodeParameters' = {'nodeId': node_id}
+		params: ResolveNodeParameters = {'nodeId': node_id}
 		result = await self._client.send.DOM.resolveNode(params, session_id=self._session_id)
 		object_id = result['object'].get('objectId', None)
 
@@ -515,13 +515,13 @@ class Element:
 		x = box['x'] + box['width'] / 2
 		y = box['y'] + box['height'] / 2
 
-		params: 'DispatchMouseEventParameters' = {'type': 'mouseMoved', 'x': x, 'y': y}
+		params: DispatchMouseEventParameters = {'type': 'mouseMoved', 'x': x, 'y': y}
 		await self._client.send.Input.dispatchMouseEvent(params, session_id=self._session_id)
 
 	async def focus(self) -> None:
 		"""Focus the element."""
 		node_id = await self._get_node_id()
-		params: 'FocusParameters' = {'nodeId': node_id}
+		params: FocusParameters = {'nodeId': node_id}
 		await self._client.send.DOM.focus(params, session_id=self._session_id)
 
 	async def check(self) -> None:
@@ -545,11 +545,11 @@ class Element:
 		node_id = await self._get_node_id()
 
 		# Request child nodes to get the options
-		params: 'RequestChildNodesParameters' = {'nodeId': node_id, 'depth': 1}
+		params: RequestChildNodesParameters = {'nodeId': node_id, 'depth': 1}
 		await self._client.send.DOM.requestChildNodes(params, session_id=self._session_id)
 
 		# Get the updated node description with children
-		describe_params: 'DescribeNodeParameters' = {'nodeId': node_id, 'depth': 1}
+		describe_params: DescribeNodeParameters = {'nodeId': node_id, 'depth': 1}
 		describe_result = await self._client.send.DOM.describeNode(describe_params, session_id=self._session_id)
 
 		select_node = describe_result['node']
@@ -575,7 +575,7 @@ class Element:
 					option_node_id = child.get('nodeId')
 					if option_node_id:
 						# Get backend node ID for the option
-						option_describe_params: 'DescribeNodeParameters' = {'nodeId': option_node_id}
+						option_describe_params: DescribeNodeParameters = {'nodeId': option_node_id}
 						option_backend_result = await self._client.send.DOM.describeNode(
 							option_describe_params, session_id=self._session_id
 						)
@@ -641,7 +641,7 @@ class Element:
 	async def get_attribute(self, name: str) -> str | None:
 		"""Get an attribute value."""
 		node_id = await self._get_node_id()
-		params: 'GetAttributesParameters' = {'nodeId': node_id}
+		params: GetAttributesParameters = {'nodeId': node_id}
 		result = await self._client.send.DOM.getAttributes(params, session_id=self._session_id)
 
 		attributes = result['attributes']
@@ -654,7 +654,7 @@ class Element:
 		"""Get the bounding box of the element."""
 		try:
 			node_id = await self._get_node_id()
-			params: 'GetBoxModelParameters' = {'nodeId': node_id}
+			params: GetBoxModelParameters = {'nodeId': node_id}
 			result = await self._client.send.DOM.getBoxModel(params, session_id=self._session_id)
 
 			if 'model' not in result:
@@ -695,10 +695,10 @@ class Element:
 			raise RuntimeError('Element is not visible or has no bounding box')
 
 		# Create viewport clip for the element
-		viewport: 'Viewport' = {'x': box['x'], 'y': box['y'], 'width': box['width'], 'height': box['height'], 'scale': 1.0}
+		viewport: Viewport = {'x': box['x'], 'y': box['y'], 'width': box['width'], 'height': box['height'], 'scale': 1.0}
 
 		# Prepare screenshot parameters
-		params: 'CaptureScreenshotParameters' = {'format': format, 'clip': viewport}
+		params: CaptureScreenshotParameters = {'format': format, 'clip': viewport}
 
 		if quality is not None and format.lower() == 'jpeg':
 			params['quality'] = quality
@@ -791,7 +791,7 @@ class Element:
 
 		# Prepare CallFunctionOn parameters
 
-		params: 'CallFunctionOnParameters' = {
+		params: CallFunctionOnParameters = {
 			'functionDeclaration': function_declaration,
 			'objectId': object_id,
 			'returnByValue': True,
