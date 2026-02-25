@@ -2,12 +2,10 @@ import React from 'react';
 import {
   LayoutDashboard,
   Globe,
-  MessageSquare,
   Database,
   Settings,
   Play,
   ShieldAlert,
-  Activity,
   BarChart3,
   Terminal,
   FileText,
