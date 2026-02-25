@@ -343,6 +343,7 @@ name = "browser-use"
 version = "0.11.12"
 source = { editable = "." }
 dependencies = [
+    { name = "aiofiles" },
     { name = "aiohttp" },
     { name = "anthropic" },
     { name = "anyio" },
@@ -453,6 +454,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "agentmail", marker = "extra == 'examples'", specifier = "==0.0.59" },
+    { name = "aiofiles", specifier = ">=24.1.0" },
     { name = "aiohttp", specifier = ">=3.13.3" },
     { name = "anthropic", specifier = ">=0.72.1,<1.0.0" },
     { name = "anyio", specifier = ">=4.9.0" },
