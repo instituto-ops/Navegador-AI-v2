@@ -43,11 +43,11 @@ JsonSchemaModels = [
 	'meta-llama/llama-4-scout-17b-16e-instruct',
 	'openai/gpt-oss-20b',
 	'openai/gpt-oss-120b',
-	'llama-3.3-70b-versatile',
 ]
 
 ToolCallingModels = [
 	'moonshotai/kimi-k2-instruct',
+	'llama-3.3-70b-versatile',
 	'llama3-70b-8192',
 ]
 

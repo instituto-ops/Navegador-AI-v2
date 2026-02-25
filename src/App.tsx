@@ -13,7 +13,8 @@ import { PuterDesktop } from './components/PuterDesktop';
 export default function App() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('BROWSER');
   const [agentState, setAgentState] = useState<AgentState>('IDLE');
-  const [activeLLM, setActiveLLM] = useState<string>('Groq (llama-3.3-70b)');
+  const [selectedModel, setSelectedModel] = useState<string>('auto');
+  const [activeLLM, setActiveLLM] = useState<string>('Aguardando...');
   const [currentUrl, setCurrentUrl] = useState<string>('about:blank');
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [puterLogs, setPuterLogs] = useState<any[]>([]);
@@ -39,14 +40,23 @@ export default function App() {
     a.click();
   };
 
+  const handleStopAgent = async () => {
+    addLog('SYSTEM', 'Interrompendo agente...');
+    try {
+      await fetch('http://localhost:8000/stop-agent', { method: 'POST' });
+    } catch (e) {
+      addLog('ERROR', 'Falha ao enviar sinal de stop.');
+    }
+  };
+
   // Puter.js Integration for Instant Brain
   const askPuter = async (query: string) => {
     const userLog = { id: Math.random().toString(36), message: query, type: 'USER' };
     setPuterLogs(prev => [...prev, userLog]);
 
     setAgentState('THINKING');
-    setReasoning({ thought: 'Puter está analisando a requisição neural...', goal: 'Gerar resposta contextual via Gemini.' });
-    addLog('INFO', `[PUTER] Processando consulta neural: ${query.substring(0, 30)}...`);
+    setReasoning({ thought: 'Puter está analisando a requisição neural...', goal: 'Gerar resposta contextual via Gemini.', isWaiting: true });
+    addLog('INFO', `[PUTER] Processando consulta neural...`);
 
     try {
       // @ts-ignore
@@ -57,7 +67,7 @@ export default function App() {
 
       const aiLog = { id: Math.random().toString(36), message: messageContent, type: 'AI' };
       setPuterLogs(prev => [...prev, aiLog]);
-      addLog('INFO', '[PUTER] Resposta processada.');
+      addLog('INFO', '[PUTER] Resposta recebida.');
     } catch (error) {
       addLog('ERROR', `[PUTER] ${error instanceof Error ? error.message : 'Erro na conexão'}`);
     } finally {
@@ -77,13 +87,14 @@ export default function App() {
 
     setActiveTab('BROWSER');
     setAgentState('THINKING');
-    addLog('SYSTEM', `[NEURO] Iniciando tarefa: "${command}"`);
+    setReasoning({ isWaiting: true, thought: 'Contatando servidor neural...', elapsed: 0 });
+    addLog('SYSTEM', `[NEURO] Início: "${command}" [MODELO: ${selectedModel.toUpperCase()}]`);
 
     try {
       const response = await fetch('http://localhost:8000/run-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command }),
+        body: JSON.stringify({ command, model: selectedModel }),
       });
 
       if (!response.ok) throw new Error('Falha no motor Python');
@@ -102,17 +113,31 @@ export default function App() {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = JSON.parse(line.substring(6));
+
             if (data.type === 'step') {
               setAgentState('ACTING');
-              setReasoning({ thought: data.thought, goal: data.goal, memory: data.memory });
+              setReasoning({
+                thought: data.thought,
+                goal: data.goal,
+                memory: data.memory,
+                elapsed: data.elapsed,
+                isWaiting: false
+              });
               if (data.url) setCurrentUrl(data.url);
+              if (data.thought) {
+                addLog('LLM', `[PASSO ${data.step} | ${data.elapsed}s] ${data.thought}`);
+              }
             } else if (data.type === 'info') {
-              addLog('INFO', data.message);
+              addLog('INFO', `[${data.elapsed || '...'}s] ${data.message}`);
+              if (data.message.includes('Usando') || data.message.includes('Conectando')) {
+                const modelMatch = data.message.match(/Usando (.*)\.\.\./) || data.message.match(/ao (.*)\.\.\./);
+                if (modelMatch) setActiveLLM(modelMatch[1]);
+              }
             } else if (data.type === 'done') {
               setAgentState('SYNTHESIZING');
-              addLog('INFO', data.message);
+              addLog('SYSTEM', `[TOTAL: ${data.total_time}s] ${data.message}`);
               if (data.final_url) setCurrentUrl(data.final_url);
-              if (data.summary) addLog('INFO', `RESUMO: ${data.summary}`);
+              if (data.summary) addLog('INFO', `RESUMO FINAL: ${data.summary}`);
             } else if (data.type === 'error') {
               addLog('ERROR', data.message);
               setAgentState('ERROR');
@@ -127,7 +152,8 @@ export default function App() {
       setTimeout(() => {
         setAgentState('IDLE');
         setReasoning(null);
-      }, 2000);
+        setActiveLLM('Aguardando...');
+      }, 3000);
     }
   };
 
@@ -147,9 +173,9 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ logs: logText }),
       });
-      addLog('SYSTEM', 'Logs sincronizados com sucesso.');
+      addLog('SYSTEM', 'Logs sincronizados.');
     } catch (e) {
-      addLog('ERROR', 'Falha na sincronização de logs.');
+      addLog('ERROR', 'Falha na sincronização.');
     }
   };
 
@@ -185,7 +211,14 @@ export default function App() {
         onSendLogsToAssistant={handleSendLogsToAssistant}
       />
       <div className="flex-1 flex flex-col min-w-0">
-        <TopBar agentState={agentState} activeLLM={activeLLM} currentUrl={currentUrl} />
+        <TopBar
+          agentState={agentState}
+          activeLLM={activeLLM}
+          currentUrl={currentUrl}
+          selectedModel={selectedModel}
+          onModelChange={setSelectedModel}
+          onStop={handleStopAgent}
+        />
         <ReasoningBar state={reasoning} isVisible={reasoning !== null} />
         {renderContent()}
       </div>
