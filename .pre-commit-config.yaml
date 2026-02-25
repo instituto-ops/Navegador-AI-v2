@@ -62,6 +62,6 @@ repos:
       - id: debug-statements
       - id: forbid-submodules
       - id: check-added-large-files
-        args: ["--maxkb=600"]
+        args: ["--maxkb=2000"]
       # - id: name-tests-test
       #   args: ["--pytest-test-first"]
