@@ -1,8 +1,8 @@
 import React from 'react';
-import { Terminal, Activity, Eye, Brain, MousePointerClick, FileText, CheckCircle2, AlertCircle, Square, Cpu, Zap, Globe, HardDrive } from 'lucide-react';
+import { Activity, Brain, MousePointer2, AlertCircle, Zap, Cpu, Globe, HardDrive, Square, Eye, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export type AgentState = 'IDLE' | 'OBSERVING' | 'THINKING' | 'ACTING' | 'SYNTHESIZING' | 'ERROR';
+export type AgentState = 'IDLE' | 'THINKING' | 'ACTING' | 'ERROR';
 
 interface TopBarProps {
   agentState: AgentState;
@@ -11,44 +11,65 @@ interface TopBarProps {
   selectedModel: string;
   onModelChange: (model: string) => void;
   onStop: () => void;
+  onOpenBrowser: () => void;
 }
 
-export function TopBar({ agentState, activeLLM, currentUrl, selectedModel, onModelChange, onStop }: TopBarProps) {
+export function TopBar({ agentState, activeLLM, currentUrl, selectedModel, onModelChange, onStop, onOpenBrowser }: TopBarProps) {
   const stateConfig = {
-    IDLE: { icon: Terminal, color: 'text-neural-muted', label: 'Aguardando Comando' },
-    OBSERVING: { icon: Eye, color: 'text-blue-400', label: 'Percepção Visual & DOM' },
-    THINKING: { icon: Brain, color: 'text-neural-warning', label: 'Raciocínio ReAct' },
-    ACTING: { icon: MousePointerClick, color: 'text-neural-accent', label: 'Executando Ação' },
-    SYNTHESIZING: { icon: FileText, color: 'text-purple-400', label: 'Sintetizando Dados' },
-    ERROR: { icon: AlertCircle, color: 'text-neural-error', label: 'Falha Crítica' },
+    IDLE: { label: 'Ocioso', color: 'text-neural-muted', icon: Activity },
+    THINKING: { label: 'Processando', color: 'text-neural-accent animate-pulse', icon: Brain },
+    ACTING: { label: 'Agindo', color: 'text-neural-success', icon: MousePointer2 },
+    ERROR: { label: 'Falha Crítica', color: 'text-neural-error', icon: AlertCircle },
   };
-
-  const config = stateConfig[agentState];
-  const Icon = config.icon;
 
   const models = [
     { id: 'auto', label: 'Auto (Cascata)', icon: Zap },
     { id: 'groq', label: 'Groq (Ultra-Rápido)', icon: Cpu },
     { id: 'vision', label: 'Vision / OCR (Coleta Visual)', icon: Eye },
+    { id: 'smol', label: 'Smol (Local Ultra-Leve)', icon: Zap },
     { id: 'openrouter', label: 'Cloud Master (OR)', icon: Globe },
     { id: 'ollama', label: 'Ollama (Local Privado)', icon: HardDrive },
   ];
 
+  const config = stateConfig[agentState];
+  const Icon = config.icon;
+
   return (
     <div className="glass-panel h-14 flex items-center justify-between px-6 mb-4">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Activity className="w-5 h-5 text-neural-accent" />
-          <span className="font-mono font-bold tracking-wider text-neural-accent">MAESTRO OS v5.2</span>
+      <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 pr-6 border-r border-neural-border/50">
+          <div className={`p-1.5 rounded-md bg-black/20 ${config.color}`}>
+            <Icon className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-[10px] text-neural-muted uppercase tracking-tighter font-bold">Status do Núcleo</div>
+            <div className={`text-xs font-mono font-bold leading-none ${config.color}`}>
+              {config.label}
+            </div>
+          </div>
         </div>
-        <div className="w-px h-6 bg-neural-border mx-2" />
-        <div className="flex items-center gap-2">
-          <Icon className={`w-4 h-4 ${config.color} ${agentState !== 'IDLE' ? 'animate-pulse' : ''}`} />
-          <span className={`text-sm font-medium ${config.color} uppercase tracking-tighter`}>{config.label}</span>
+
+        <div className="flex items-center gap-3">
+          <div className="p-1.5 rounded-md bg-neural-accent/10">
+            <Cpu className="w-4 h-4 text-neural-accent" />
+          </div>
+          <div>
+            <div className="text-[10px] text-neural-muted uppercase tracking-tighter font-bold">Neural Engine</div>
+            <div className="text-xs font-mono text-neural-text font-bold leading-none">{activeLLM}</div>
+          </div>
         </div>
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Abrir Navegador Button */}
+        <button
+          onClick={onOpenBrowser}
+          className="flex items-center gap-2 bg-neural-accent/10 hover:bg-neural-accent/20 text-neural-accent border border-neural-accent/30 px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all"
+        >
+          <ExternalLink className="w-3 h-3" />
+          Instância Navegador
+        </button>
+
         {/* Model Selector */}
         <div className="flex bg-black/40 border border-neural-border p-0.5 rounded-lg">
           {models.map((m) => {
@@ -59,8 +80,8 @@ export function TopBar({ agentState, activeLLM, currentUrl, selectedModel, onMod
                 key={m.id}
                 onClick={() => onModelChange(m.id)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${active
-                  ? 'bg-neural-accent text-black'
-                  : 'text-neural-muted hover:text-neural-text'
+                    ? 'bg-neural-accent text-black'
+                    : 'text-neural-muted hover:text-neural-text'
                   }`}
                 title={m.label}
               >
@@ -69,12 +90,6 @@ export function TopBar({ agentState, activeLLM, currentUrl, selectedModel, onMod
               </button>
             );
           })}
-        </div>
-
-        {/* URL Display */}
-        <div className="flex items-center gap-2 text-[10px] bg-black/30 border border-neural-border px-3 py-1.5 rounded-lg font-mono">
-          <span className="text-neural-muted uppercase">URL:</span>
-          <span className="text-neural-text truncate max-w-[200px]">{currentUrl}</span>
         </div>
 
         {/* Stop Button */}

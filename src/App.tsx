@@ -49,6 +49,15 @@ export default function App() {
     }
   };
 
+  const handleOpenBrowser = async () => {
+    addLog('SYSTEM', 'Lançando instância do navegador...');
+    try {
+      await fetch('http://localhost:8000/open-browser', { method: 'POST' });
+    } catch (e) {
+      addLog('ERROR', 'Falha ao lançar navegador.');
+    }
+  };
+
   // Puter.js Integration for Instant Brain
   const askPuter = async (query: string) => {
     const userLog = { id: Math.random().toString(36), message: query, type: 'USER' };
@@ -218,6 +227,7 @@ export default function App() {
           selectedModel={selectedModel}
           onModelChange={setSelectedModel}
           onStop={handleStopAgent}
+          onOpenBrowser={handleOpenBrowser}
         />
         <ReasoningBar state={reasoning} isVisible={reasoning !== null} />
         {renderContent()}
