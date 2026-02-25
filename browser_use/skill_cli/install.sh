@@ -337,7 +337,7 @@ install_uv() {
 	fi
 
 	# Use official uv installer
-	curl -LsSf https://astral.sh/uv/install.sh | sh
+	curl -LsSf https://github.com/astral-sh/uv/releases/latest/download/uv-installer.sh | sh
 
 	# Add common uv install locations to PATH for current session
 	export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"

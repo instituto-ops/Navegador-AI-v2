@@ -48,6 +48,7 @@ dependencies = [
     "markdownify>=1.2.0",
     "python-docx>=1.2.0",
     "browser-use-sdk>=2.0.12",
+    "aiofiles>=24.1.0",
 ]
 # google-api-core: only used for Google LLM APIs
 # pyperclip: only used for examples that use copy/paste
@@ -109,7 +110,7 @@ build-backend = "hatchling.build"
 
 
 [tool.codespell]
-ignore-words-list = "bu,wit,dont,cant,wont,re-use,re-used,re-using,re-usable,thats,doesnt,doubleclick,finaly,finalY"
+ignore-words-list = "bu,wit,dont,cant,wont,re-use,re-used,re-using,re-usable,thats,doesnt,doubleclick,finaly,finalY,comando,auxiliar,sinal,erro"
 skip = "*.json"
 
 [tool.ruff]
