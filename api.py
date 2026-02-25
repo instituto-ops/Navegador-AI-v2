@@ -5,6 +5,7 @@ import os
 import random
 import time
 
+import aiofiles
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,7 +23,7 @@ app = FastAPI()
 # Configurar CORS
 app.add_middleware(
 	CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+	allow_origins=['http://localhost:3000'],
 	allow_credentials=True,
 	allow_methods=['*'],
 	allow_headers=['*'],
@@ -214,7 +215,7 @@ async def run_agent(request: CommandRequest):
 						final_url = 'about:blank'
 						try:
 							final_url = await browser.get_current_page_url()
-						except:
+						except Exception:
 							pass
 
 						summary = 'Tarefa finalizada.'
@@ -296,8 +297,8 @@ class SSELogHandler(logging.Handler):
 async def save_logs(request: dict):
 	try:
 		content = request.get('logs', '')
-		with open('last_session_logs.txt', 'w', encoding='utf-8') as f:
-			f.write(content)
+		async with aiofiles.open('last_session_logs.txt', 'w', encoding='utf-8') as f:
+			await f.write(content)
 		return {'status': 'success'}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
@@ -318,8 +319,8 @@ async def list_reports():
 async def get_report(filename: str):
 	try:
 		path = os.path.join('reports', filename)
-		with open(path, 'r', encoding='utf-8') as f:
-			content = f.read()
+		async with aiofiles.open(path, 'r', encoding='utf-8') as f:
+			content = await f.read()
 		return {'content': content}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
@@ -363,17 +364,17 @@ async def warmup_browser(request: WarmupRequest):
 					await asyncio.sleep(wait_time)
 
 					page = await browser.get_current_page()
+					if page:
+						# Scroll Simulation
+						await page.evaluate('window.scrollTo(0, document.body.scrollHeight * 0.3)')
+						await asyncio.sleep(2)
+						await page.evaluate('window.scrollBy(0, -document.body.scrollHeight * 0.1)')
+						await asyncio.sleep(2)
+						await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
 
-					# Scroll Simulation
-					await page.evaluate('window.scrollTo(0, document.body.scrollHeight * 0.3)')
-					await asyncio.sleep(2)
-					await page.evaluate('window.scrollBy(0, -document.body.scrollHeight * 0.1)')
-					await asyncio.sleep(2)
-					await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
-
-					# Micro-Activity (Mouse Move)
-					mouse = await page.mouse
-					await mouse.move(random.randint(100, 500), random.randint(100, 500))
+						# Micro-Activity (Mouse Move)
+						mouse = await page.mouse
+						await mouse.move(random.randint(100, 500), random.randint(100, 500))
 
 					elapsed = round(time.time() - start_time, 1)
 					await queue.put(
