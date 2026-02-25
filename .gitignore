@@ -1,12 +1,44 @@
+# Dependências
 node_modules/
+.venv/
+env/
+venv/
+ENV/
+
+# Build e Saídas
 build/
 dist/
 coverage/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Python (Fundamental para evitar as 21 mil linhas de lixo)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Sistema e IDEs
 .DS_Store
+Thumbs.db
+.vscode/
+
+# Logs e Dados Locais
 *.log
-.env*
+.env
+.env.local
 !.env.example
 browser_profile/
 last_session_logs.txt
 reports/
 *.txt
+
+# Artefatos de Verificação/Testes (Limpeza de rascunhos do Jules)
+verification/
+reproduce_issue.py
+verify_agent.py
+test_refactor.py
+output.txt
+verify_storage_state.py
+tests/performance/test_*.py
