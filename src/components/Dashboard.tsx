@@ -1,6 +1,10 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { TrendingUp, Users, Activity, Target } from 'lucide-react';
+import { TrendingUp, Users, Activity, Target, ShieldCheck } from 'lucide-react';
+
+interface DashboardProps {
+  authorityLevel?: number;
+}
 
 const adsData = [
   { name: 'Seg', clicks: 400, cpa: 24 },
@@ -20,7 +24,7 @@ const doctoraliaData = [
   { name: 'Sem 5', rank: 3 },
 ];
 
-export function Dashboard() {
+export function Dashboard({ authorityLevel = 80 }: DashboardProps) {
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
       <div className="flex items-center justify-between mb-8">
@@ -36,7 +40,24 @@ export function Dashboard() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
+        <div className="glass-panel p-4 relative overflow-hidden">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-neural-muted text-sm">Autoridade</span>
+            <ShieldCheck className={`w-4 h-4 ${authorityLevel >= 90 ? 'text-emerald-400' : 'text-orange-400'}`} />
+          </div>
+          <div className="text-2xl font-bold text-white">{authorityLevel}%</div>
+          <div className="w-full bg-white/10 h-1 mt-3 rounded-full overflow-hidden">
+             <div
+               className={`h-full transition-all duration-1000 ${authorityLevel >= 90 ? 'bg-emerald-400' : 'bg-orange-400'}`}
+               style={{ width: `${authorityLevel}%` }}
+             />
+          </div>
+          <div className="text-[10px] text-neural-muted mt-2">
+            {authorityLevel >= 90 ? 'Navegação Stealth Ativa' : 'Requer Aquecimento'}
+          </div>
+        </div>
+
         <div className="glass-panel p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-neural-muted text-sm">CPA Médio (Ads)</span>

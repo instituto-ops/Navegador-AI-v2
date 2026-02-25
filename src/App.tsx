@@ -19,6 +19,8 @@ export default function App() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [puterLogs, setPuterLogs] = useState<any[]>([]);
   const [reasoning, setReasoning] = useState<ReasoningState | null>(null);
+  const [isWarmingUp, setIsWarmingUp] = useState(false);
+  const [authorityLevel, setAuthorityLevel] = useState(80);
 
   const addLog = (level: LogEntry['level'], message: string) => {
     setLogs(prev => [...prev, {
@@ -55,6 +57,55 @@ export default function App() {
       await fetch('http://localhost:8000/open-browser', { method: 'POST' });
     } catch (e) {
       addLog('ERROR', 'Falha ao lançar navegador.');
+    }
+  };
+
+  const handleWarmup = async () => {
+    if (isWarmingUp) return;
+    setIsWarmingUp(true);
+    addLog('SYSTEM', '[STEALTH] Iniciando protocolo de aquecimento...');
+
+    try {
+      const response = await fetch('http://localhost:8000/warmup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) throw new Error('Falha ao iniciar aquecimento');
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) throw new Error('Stream não disponível');
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.substring(6));
+
+            if (data.type === 'info') {
+               addLog('INFO', data.message);
+            } else if (data.type === 'step') {
+               addLog('LLM', `[WARMUP] ${data.thought}`);
+            } else if (data.type === 'done') {
+               addLog('SYSTEM', data.message);
+               setAuthorityLevel(100);
+            } else if (data.type === 'error') {
+               addLog('ERROR', data.message);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      addLog('ERROR', 'Erro no aquecimento de perfil.');
+    } finally {
+      setIsWarmingUp(false);
     }
   };
 
@@ -190,7 +241,7 @@ export default function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'DASHBOARD': return <Dashboard />;
+      case 'DASHBOARD': return <Dashboard authorityLevel={authorityLevel} />;
       case 'LOGS': return <LogPanel logs={logs} onClear={handleClearLogs} onDownload={handleDownloadLogs} />;
       case 'REPORTS': return <ReportsPanel />;
       case 'PUTER': return <PuterDesktop />;
@@ -218,6 +269,8 @@ export default function App() {
         runMacro={executeMacro}
         onCopyLogs={handleCopyLogs}
         onSendLogsToAssistant={handleSendLogsToAssistant}
+        onWarmup={handleWarmup}
+        isWarmingUp={isWarmingUp}
       />
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar

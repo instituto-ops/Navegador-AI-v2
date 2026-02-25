@@ -6,6 +6,7 @@ import {
   Database,
   Settings,
   Play,
+  ShieldCheck,
   ShieldAlert,
   Activity,
   BarChart3,
@@ -24,9 +25,11 @@ interface SidebarProps {
   runMacro: (macro: string) => void;
   onCopyLogs: () => void;
   onSendLogsToAssistant: () => void;
+  onWarmup: () => void;
+  isWarmingUp: boolean;
 }
 
-export function Sidebar({ activeTab, setActiveTab, runMacro, onCopyLogs, onSendLogsToAssistant }: SidebarProps) {
+export function Sidebar({ activeTab, setActiveTab, runMacro, onCopyLogs, onSendLogsToAssistant, onWarmup, isWarmingUp }: SidebarProps) {
   const menuItems = [
     { id: 'BROWSER', icon: Globe, label: 'Navegador AI', color: 'text-blue-400' },
     { id: 'DASHBOARD', icon: LayoutDashboard, label: 'Dashboard', color: 'text-purple-400' },
@@ -90,6 +93,27 @@ export function Sidebar({ activeTab, setActiveTab, runMacro, onCopyLogs, onSendL
               </div>
               <Play className="w-3 h-3 opacity-0 group-hover:opacity-100 text-neural-accent transition-opacity" />
             </button>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xs font-semibold text-neural-muted uppercase tracking-wider mb-3 px-2">Stealth Tools</h2>
+          <div className="space-y-1">
+             <button
+               onClick={onWarmup}
+               disabled={isWarmingUp}
+               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 group ${
+                 isWarmingUp
+                   ? 'bg-orange-500/10 text-orange-400 animate-pulse cursor-wait border border-orange-500/20'
+                   : 'text-neural-text hover:bg-white/5 hover:text-orange-400'
+               }`}
+             >
+               <div className="flex items-center gap-3">
+                 <ShieldCheck className={`w-4 h-4 ${isWarmingUp ? 'text-orange-400' : 'text-neural-muted group-hover:text-orange-400'}`} />
+                 {isWarmingUp ? 'Aquecendo...' : 'Aquecer Perfil'}
+               </div>
+               {isWarmingUp && <Activity className="w-3 h-3 text-orange-400 animate-spin" />}
+             </button>
           </div>
         </div>
 
