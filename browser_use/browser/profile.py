@@ -5,8 +5,10 @@ from collections.abc import Iterable
 from enum import Enum
 from functools import cache
 from pathlib import Path
-from typing import Annotated, Any, Literal, Self, TypedDict
+from typing import Annotated, Any, Literal, Self
 from urllib.parse import urlparse
+
+from typing_extensions import TypedDict
 
 from pydantic import AfterValidator, AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
 
