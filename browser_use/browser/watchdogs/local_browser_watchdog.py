@@ -17,6 +17,7 @@ from browser_use.browser.events import (
 	BrowserLaunchResult,
 	BrowserStopEvent,
 )
+from browser_use.browser.profile import ProxySettings
 from browser_use.browser.watchdog_base import BaseWatchdog
 from browser_use.observability import observe_debug
 
@@ -51,7 +52,12 @@ class LocalBrowserWatchdog(BaseWatchdog):
 			self.logger.debug('[LocalBrowserWatchdog] Received BrowserLaunchEvent, launching local browser...')
 
 			# self.logger.debug('[LocalBrowserWatchdog] Calling _launch_browser...')
-			process, cdp_url = await self._launch_browser()
+			process, cdp_url = await self._launch_browser(
+				executable_path=event.executable_path,
+				args=event.args,
+				headless=event.headless,
+				proxy=event.proxy,
+			)
 			self._subprocess = process
 			# self.logger.debug(f'[LocalBrowserWatchdog] _launch_browser returned: process={process}, cdp_url={cdp_url}')
 
@@ -88,7 +94,14 @@ class LocalBrowserWatchdog(BaseWatchdog):
 			self.event_bus.dispatch(BrowserKillEvent())
 
 	@observe_debug(ignore_input=True, ignore_output=True, name='launch_browser_process')
-	async def _launch_browser(self, max_retries: int = 3) -> tuple[psutil.Process, str]:
+	async def _launch_browser(
+		self,
+		max_retries: int = 3,
+		executable_path: str | None = None,
+		args: list[str] | None = None,
+		headless: bool | None = None,
+		proxy: ProxySettings | None = None,
+	) -> tuple[psutil.Process, str]:
 		"""Launch browser process and return (process, cdp_url).
 
 		Handles launch errors by falling back to temporary directories if needed.
@@ -97,7 +110,20 @@ class LocalBrowserWatchdog(BaseWatchdog):
 			Tuple of (psutil.Process, cdp_url)
 		"""
 		# Keep track of original user_data_dir to restore if needed
-		profile = self.browser_session.browser_profile
+		# Copy the profile to avoid modifying the session-wide profile with event-specific overrides
+		profile = self.browser_session.browser_profile.model_copy(deep=True)
+
+		# Apply overrides from event if provided
+		if executable_path is not None:
+			profile.executable_path = executable_path
+		if args:
+			# Append extra args, don't replace
+			profile.args.extend(args)
+		if headless is not None:
+			profile.headless = headless
+		if proxy is not None:
+			profile.proxy = proxy
+
 		self._original_user_data_dir = str(profile.user_data_dir) if profile.user_data_dir else None
 		self._temp_dirs_to_cleanup = []
 

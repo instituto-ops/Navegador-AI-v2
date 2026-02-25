@@ -9,6 +9,7 @@ from bubus.models import T_EventResultType
 from cdp_use.cdp.target import TargetID
 from pydantic import BaseModel, Field, field_validator
 
+from browser_use.browser.profile import ProxySettings
 from browser_use.browser.views import BrowserStateSummary
 from browser_use.dom.views import EnhancedDOMTreeNode
 
@@ -316,7 +317,11 @@ class BrowserLaunchResult(BaseModel):
 class BrowserLaunchEvent(BaseEvent[BrowserLaunchResult]):
 	"""Launch a local browser process."""
 
-	# TODO: add executable_path, proxy settings, preferences, extra launch args, etc.
+	# TODO: add preferences, etc.
+	executable_path: str | None = None
+	args: list[str] = Field(default_factory=list)
+	headless: bool | None = None
+	proxy: ProxySettings | None = None
 
 	event_timeout: float | None = Field(default_factory=lambda: _get_timeout('TIMEOUT_BrowserLaunchEvent', 30.0))  # seconds
 
