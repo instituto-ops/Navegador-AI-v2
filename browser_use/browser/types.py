@@ -1,28 +1,28 @@
-from typing import NotRequired, TypedDict
+import typing_extensions
 
 
-class StorageStateOriginStorage(TypedDict):
+class StorageStateOriginStorage(typing_extensions.TypedDict):
 	name: str
 	value: str
 
 
-class StorageStateOrigin(TypedDict):
+class StorageStateOrigin(typing_extensions.TypedDict):
 	origin: str
-	localStorage: NotRequired[list[StorageStateOriginStorage]]
-	sessionStorage: NotRequired[list[StorageStateOriginStorage]]
+	localStorage: typing_extensions.NotRequired[list[StorageStateOriginStorage]]
+	sessionStorage: typing_extensions.NotRequired[list[StorageStateOriginStorage]]
 
 
-class StorageStateCookie(TypedDict):
+class StorageStateCookie(typing_extensions.TypedDict):
 	name: str
 	value: str
 	domain: str
 	path: str
-	expires: NotRequired[float]
-	httpOnly: NotRequired[bool]
-	secure: NotRequired[bool]
-	sameSite: NotRequired[str]
+	expires: typing_extensions.NotRequired[float]
+	httpOnly: typing_extensions.NotRequired[bool]
+	secure: typing_extensions.NotRequired[bool]
+	sameSite: typing_extensions.NotRequired[str]
 
 
-class StorageState(TypedDict):
+class StorageState(typing_extensions.TypedDict):
 	cookies: list[StorageStateCookie]
 	origins: list[StorageStateOrigin]

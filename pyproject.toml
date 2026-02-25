@@ -130,19 +130,7 @@ ignore = [
 unfixable = ["E101", "E402", "E501", "F841", "E731"]
 
 [tool.ruff.lint.per-file-ignores]
-"examples/**/*.py" = ["ASYNC240", "ASYNC250"]
-"tests/**/*.py" = ["ASYNC240", "ASYNC250"]
-"browser_use/browser/watchdogs/*.py" = ["ASYNC240"]
-"browser_use/integrations/**/*.py" = ["ASYNC240"]
-"browser_use/mcp/**/*.py" = ["ASYNC240"]
-"browser_use/screenshots/**/*.py" = ["ASYNC240"]
-"browser_use/skill_cli/**/*.py" = ["ASYNC240"]
-"browser_use/tokens/**/*.py" = ["ASYNC240"]
-"browser_use/dom/playground/**/*.py" = ["ASYNC250"]
-"api.py" = ["ASYNC240", "ASYNC230", "E722"]
-"browser_use/actor/**/*.py" = ["ASYNC250"]
-"browser_use/agent/**/*.py" = ["ASYNC240"]
-"browser_use/browser/session.py" = ["ASYNC240"]
+"api.py" = ["E722"]
 
 [tool.ruff.format]
 quote-style = "single"
