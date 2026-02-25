@@ -50,16 +50,17 @@ async def get_or_create_browser():
 	async with shared_browser_lock:
 		if shared_browser is None:
 			print('[SYSTEM] Inicializando Instância Global do Navegador...')
-			abs_profile_path = os.path.abspath(os.path.join(os.getcwd(), 'browser_profile'))
-			if not os.path.exists(abs_profile_path):
-				os.makedirs(abs_profile_path)
+			profile_path = await Path(os.getcwd()).joinpath('browser_profile').resolve()
+			abs_profile_path = str(profile_path)
+			if not await profile_path.exists():
+				await profile_path.mkdir(parents=True)
 
 			chrome_path = None
 			for p in [
 				r'C:\Program Files\Google\Chrome\Application\chrome.exe',
 				r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
 			]:
-				if os.path.exists(p):
+				if await Path(p).exists():
 					chrome_path = p
 					break
 
@@ -210,7 +211,7 @@ async def run_agent(request: CommandRequest):
 						final_url = 'about:blank'
 						try:
 							final_url = await browser.get_current_page_url()
-						except:
+						except Exception:
 							pass
 
 						summary = 'Tarefa finalizada.'
@@ -292,8 +293,7 @@ class SSELogHandler(logging.Handler):
 async def save_logs(request: dict):
 	try:
 		content = request.get('logs', '')
-		with open('last_session_logs.txt', 'w', encoding='utf-8') as f:
-			f.write(content)
+		await Path('last_session_logs.txt').write_text(content, encoding='utf-8')
 		return {'status': 'success'}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
@@ -302,10 +302,11 @@ async def save_logs(request: dict):
 @app.get('/reports')
 async def list_reports():
 	try:
-		reports_dir = 'reports'
-		if not os.path.exists(reports_dir):
-			os.makedirs(reports_dir)
-		return {'reports': os.listdir(reports_dir)}
+		reports_dir = Path('reports')
+		if not await reports_dir.exists():
+			await reports_dir.mkdir()
+		reports = [p.name async for p in reports_dir.iterdir()]
+		return {'reports': reports}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
 
