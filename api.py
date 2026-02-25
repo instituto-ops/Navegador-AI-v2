@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 # browser-use imports
 from browser_use import Agent, Browser, ChatGroq, ChatOpenAI
+from browser_use.lam.orchestrator import LAMOrchestrator
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -139,163 +140,95 @@ async def run_agent(request: CommandRequest):
 		handler.setFormatter(logging.Formatter('%(message)s'))
 		logger.addHandler(handler)
 
-		async def step_callback(state, output, step):
-			elapsed = round(time.time() - start_time, 1)
-
-			# Capture Screenshot
-			screenshot_b64 = None
-			try:
-				# Browser-use 'state' object might contain screenshot
-				if hasattr(state, 'screenshot') and state.screenshot:
-					screenshot_b64 = state.screenshot
-				else:
-					# Fallback: force capture (might be slow)
-					# browser = await get_or_create_browser()
-					# page = await browser.get_current_page()
-					# screenshot_bytes = await page.screenshot()
-					# screenshot_b64 = base64.b64encode(screenshot_bytes).decode('utf-8')
-					pass
-			except Exception as e:
-				print(f'Warning: Failed to capture screenshot: {e}')
-
-			await queue.put(
-				{
-					'type': 'step',
-					'step': step,
-					'thought': getattr(output, 'thinking', '') or '',
-					'goal': getattr(output, 'next_goal', '') or '',
-					'memory': getattr(output, 'memory', '') or '',
-					'url': state.url,
-					'elapsed': elapsed,
-					'screenshot': screenshot_b64,
-				}
-			)
-
 		async def run_task():
 			nonlocal start_time
 			try:
 				browser = await get_or_create_browser()
-				llm_candidates = []
-				or_key = os.getenv('OPENROUTER_API_KEY')
 
-				# Seleção de modelos (v5.3.1 logic)
-				if request.model in ['auto', 'groq']:
-					groq_key = os.getenv('GROQ_API_KEY')
-					if groq_key:
-						llm_candidates.append(
-							{'name': 'Groq Llama 3.3', 'client': ChatGroq(model='llama-3.3-70b-versatile', api_key=groq_key)}
-						)
-
-				if request.model == 'vision':
-					if or_key:
-						llm_candidates.append(
-							{
-								'name': 'Cloud Vision Free',
-								'client': ChatOpenAI(
-									model='meta-llama/llama-3.2-11b-vision-instruct:free',
-									api_key=or_key,
-									base_url='https://openrouter.ai/api/v1',
-								),
-							}
-						)
-					llm_candidates.append(
-						{
-							'name': 'Local Vision',
-							'client': ChatOpenAI(model='llama3.2-vision', api_key='ollama', base_url='http://localhost:11434/v1'),
-						}
-					)
-
-				if request.model == 'smol':
-					llm_candidates.append(
-						{
-							'name': 'Local Qwen 2.5 (3B)',
-							'client': ChatOpenAI(model='qwen2.5:3b', api_key='ollama', base_url='http://localhost:11434/v1'),
-						}
-					)
-
+				# Instantiate LAM Orchestrator
+				# Determine model based on request (simplified logic here)
+				model_name = "gpt-4o"
 				if request.model == 'ollama':
-					llm_candidates.append(
-						{
-							'name': 'Local Llama 3.2 (3B)',
-							'client': ChatOpenAI(model='llama3.2', api_key='ollama', base_url='http://localhost:11434/v1'),
-						}
-					)
+					model_name = "ollama/llama3.2"
+				elif request.model == 'smol':
+					model_name = "ollama/qwen2.5:3b"
 
-				if request.model == 'openrouter' or (request.model == 'auto' and not llm_candidates):
-					if or_key:
-						llm_candidates.append(
-							{
-								'name': 'OpenRouter Free',
-								'client': ChatOpenAI(
-									model='meta-llama/llama-3.3-70b-instruct:free',
-									api_key=or_key,
-									base_url='https://openrouter.ai/api/v1',
-								),
-							}
-						)
+				# If user specifically requests a model in the command or context, we might want to pass it
+				# For now, sticking to request.model mapping
 
-				if not llm_candidates:
-					llm_candidates.append(
-						{
-							'name': 'Fallback',
-							'client': ChatOpenAI(model='llama3.2', api_key='ollama', base_url='http://localhost:11434/v1'),
-						}
-					)
+				orchestrator = LAMOrchestrator(browser=browser, model_name=model_name)
 
-				last_error = None
-				for i, candidate in enumerate(llm_candidates):
-					try:
-						await queue.put(
-							{
-								'type': 'info',
-								'message': f'🤖 Tentativa {i + 1}: {candidate["name"]} [Instância Compartilhada]',
-								'elapsed': round(time.time() - start_time, 1),
-							}
-						)
+				# Use astream instead of run directly on orchestrator because orchestrator.run is an async generator
+				async for event in orchestrator.run(request.command):
+					elapsed = round(time.time() - start_time, 1)
 
-						agent = Agent(
-							task=request.command,
-							llm=candidate['client'],
-							browser=browser,
-							use_vision=True,
-							register_new_step_callback=step_callback,
-							extend_system_message=SYSTEM_PROMPT_EXT,
-						)
+					if 'planner' in event:
+						plan_data = event['planner'].get('plan', [])
+						plan_text = "\\n".join([f"{i+1}. {step.get('description')}" for i, step in enumerate(plan_data)])
+						await queue.put({
+							'type': 'info',
+							'message': f'📝 Plano gerado:\\n{plan_text}',
+							'elapsed': elapsed
+						})
 
-						# O Agente usará uma aba no browser já aberto
-						history = await agent.run()
+					if 'executor' in event:
+						# In LangGraph with annotated state, results list grows.
+						# We want to show the LATEST result.
+						# But the event usually contains the output of the node execution.
+						# Our executor_node returns {"results": [new_result]}.
+						# So event['executor']['results'] is a list containing only the new result(s).
 
-						final_url = 'about:blank'
+						exec_results = event['executor'].get('results', [])
+						for res in exec_results:
+							step_info = res.get('step', {})
+							outcome = res.get('outcome', 'Unknown')
+							history = res.get('history')
+
+							screenshot_b64 = None
+							# Try to extract screenshot from history safely
+							try:
+								if history and hasattr(history, 'history') and history.history:
+									last_item = history.history[-1]
+									if hasattr(last_item, 'result') and last_item.result:
+										# Result is a list of ActionResult
+										# Check if any has base64_image? No, usually screenshot is on state
+										pass
+									# Or maybe screenshot is stored on the state object inside history?
+									# browser-use internal structure varies.
+									# Let's assume for now we don't have it easily unless we modify LogicExecutor to return it explicitly.
+									pass
+							except Exception:
+								pass
+
+							await queue.put({
+								'type': 'step',
+								'step': step_info.get('description', 'Action'),
+								'thought': f"Executed: {step_info.get('action_type')} - {outcome}",
+								'goal': step_info.get('description'),
+								'memory': f"Result: {str(res.get('result'))[:100]}...",
+								'url': '...',
+								'elapsed': elapsed,
+								'screenshot': screenshot_b64
+							})
+
+					if 'summarizer' in event:
+						summary = event['summarizer'].get('final_output', 'Done')
+						final_url = "about:blank"
 						try:
-							final_url = await browser.get_current_page_url()
-						except Exception:
+							if browser:
+								page = await browser.get_current_page()
+								final_url = page.url
+						except:
 							pass
 
-						summary = 'Tarefa finalizada.'
-						if history and history.history:
-							last_item = history.history[-1]
-							if last_item.result and last_item.result[-1].extracted_content:
-								summary = last_item.result[-1].extracted_content
+						await queue.put({
+							'type': 'done',
+							'message': 'Tarefa finalizada.',
+							'final_url': final_url,
+							'summary': summary,
+							'total_time': elapsed
+						})
 
-						await queue.put(
-							{
-								'type': 'done',
-								'message': f'Concluído via {candidate["name"]}',
-								'final_url': final_url,
-								'summary': summary,
-								'total_time': round(time.time() - start_time, 1),
-							}
-						)
-						return
-					except asyncio.CancelledError:
-						await queue.put({'type': 'info', 'message': 'Operação interrompida.'})
-						return
-					except Exception as e:
-						print(f'Erro na tentativa {i + 1}: {e}')
-						last_error = e
-						continue
-
-				await queue.put({'type': 'error', 'message': f'Falha: {str(last_error)}'})
 			except Exception as e:
 				await queue.put({'type': 'error', 'message': f'Erro fatal: {str(e)}'})
 			finally:
