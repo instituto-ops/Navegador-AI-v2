@@ -4,9 +4,8 @@ import logging
 import os
 import time
 import traceback
-from typing import Any, cast
+from typing import Any
 
-import aiofiles
 from anyio import Path
 from dotenv import load_dotenv
 from fake_useragent import UserAgent
@@ -16,7 +15,6 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 # browser-use imports
-import browser_use
 from browser_use import Browser
 from browser_use.lam.orchestrator import LAMOrchestrator
 
