@@ -5,6 +5,7 @@ import { ThoughtBox, LogEntry } from './components/ThoughtBox';
 import { Dashboard } from './components/Dashboard';
 import { ChatInput } from './components/ChatInput';
 import { PuterPanel } from './components/PuterPanel';
+import { BrowserPreview } from './components/BrowserPreview';
 import { ReasoningBar, ReasoningState } from './components/ReasoningBar';
 import { LogPanel } from './components/LogPanel';
 import { ReportsPanel } from './components/ReportsPanel';
@@ -16,6 +17,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState<string>('auto');
   const [activeLLM, setActiveLLM] = useState<string>('Aguardando...');
   const [currentUrl, setCurrentUrl] = useState<string>('about:blank');
+  const [currentScreenshot, setCurrentScreenshot] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [puterLogs, setPuterLogs] = useState<any[]>([]);
   const [reasoning, setReasoning] = useState<ReasoningState | null>(null);
@@ -133,6 +135,7 @@ export default function App() {
                 isWaiting: false
               });
               if (data.url) setCurrentUrl(data.url);
+              if (data.screenshot) setCurrentScreenshot(data.screenshot);
               if (data.thought) {
                 addLog('LLM', `[PASSO ${data.step} | ${data.elapsed}s] ${data.thought}`);
               }
@@ -203,7 +206,11 @@ export default function App() {
               <ChatInput onSend={executeMacro} disabled={agentState !== 'IDLE'} />
             </div>
             <div className="flex-1 flex flex-col min-w-[300px]">
-              <PuterPanel onPuterAsk={askPuter} isThinking={agentState === 'THINKING'} puterLogs={puterLogs} />
+               <BrowserPreview
+                  currentUrl={currentUrl}
+                  agentState={agentState}
+                  screenshot={currentScreenshot}
+               />
             </div>
           </div>
         );

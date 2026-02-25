@@ -6,13 +6,14 @@ import time
 
 import aiofiles
 from dotenv import load_dotenv
+from fake_useragent import UserAgent
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 # browser-use imports
-from browser_use import Agent, Browser, BrowserProfile, ChatGroq, ChatOpenAI
+from browser_use import Agent, Browser, ChatGroq, ChatOpenAI
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -39,6 +40,13 @@ current_agent_task = None
 shared_browser = None
 shared_browser_lock = asyncio.Lock()
 
+SYSTEM_PROMPT_EXT = """
+IMPORTANT INSTRUCTIONS FOR NAVIGATION:
+1. NEVER navigate to relative URLs (e.g., "/product/123"). ALWAYS use absolute URLs (e.g., "https://example.com/product/123").
+2. If you find a link on a page, always extract the full href attribute.
+3. If a URL is missing the protocol, prepend "https://".
+"""
+
 
 @app.get('/health')
 async def health():
@@ -50,26 +58,57 @@ async def get_or_create_browser():
 	async with shared_browser_lock:
 		if shared_browser is None:
 			print('[SYSTEM] Inicializando Instância Global do Navegador...')
-			abs_profile_path = os.path.abspath(os.path.join(os.getcwd(), 'browser_profile'))
-			if not os.path.exists(abs_profile_path):
-				os.makedirs(abs_profile_path)
 
-			chrome_path = None
-			for p in [
-				r'C:\Program Files\Google\Chrome\Application\chrome.exe',
-				r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
-			]:
-				if os.path.exists(p):
-					chrome_path = p
-					break
+			# Check for Cloud API Key
+			cloud_key = os.getenv('BROWSER_USE_API_KEY')
+			if cloud_key:
+				print('🚀 [MODE] Using Browser-Use Cloud (Stealth & Anti-Detect)')
+				shared_browser = Browser(
+					use_cloud=True,
+					cloud_profile_id=os.getenv('CLOUD_PROFILE_ID'),  # Optional
+				)
+			else:
+				print('🛡️ [MODE] Using Local Browser (Hardened)')
+				abs_profile_path = os.path.abspath(os.path.join(os.getcwd(), 'browser_profile'))  # noqa: ASYNC240
+				if not os.path.exists(abs_profile_path):  # noqa: ASYNC240
+					os.makedirs(abs_profile_path)
 
-			profile = BrowserProfile(
-				user_data_dir=abs_profile_path,
-				headless=False,
-				executable_path=chrome_path,
-				keep_alive=True,  # Manter vivo após a tarefa
-			)
-			shared_browser = Browser(browser_profile=profile)
+				# Cross-platform executable detection
+				chrome_path = os.getenv('BROWSER_EXECUTABLE_PATH')
+				if not chrome_path:
+					# Fallback for Windows
+					for p in [
+						r'C:\Program Files\Google\Chrome\Application\chrome.exe',
+						r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+					]:
+						if os.path.exists(p):  # noqa: ASYNC240
+							chrome_path = p
+							break
+
+				# User Agent Rotation
+				try:
+					ua = UserAgent()
+					user_agent = ua.random
+				except Exception:
+					user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+				print(f'🎭 [STEALTH] User-Agent: {user_agent}')
+
+				is_headless = os.getenv('HEADLESS', 'false').lower() == 'true'
+				shared_browser = Browser(
+					headless=is_headless,
+					keep_alive=True,
+					executable_path=chrome_path,
+					user_data_dir=abs_profile_path,
+					user_agent=user_agent,
+					args=[
+						'--disable-blink-features=AutomationControlled',
+						'--no-sandbox',
+						'--disable-infobars',
+						'--window-size=1280,720',
+					],
+				)
+
 		return shared_browser
 
 
@@ -102,6 +141,23 @@ async def run_agent(request: CommandRequest):
 
 		async def step_callback(state, output, step):
 			elapsed = round(time.time() - start_time, 1)
+
+			# Capture Screenshot
+			screenshot_b64 = None
+			try:
+				# Browser-use 'state' object might contain screenshot
+				if hasattr(state, 'screenshot') and state.screenshot:
+					screenshot_b64 = state.screenshot
+				else:
+					# Fallback: force capture (might be slow)
+					# browser = await get_or_create_browser()
+					# page = await browser.get_current_page()
+					# screenshot_bytes = await page.screenshot()
+					# screenshot_b64 = base64.b64encode(screenshot_bytes).decode('utf-8')
+					pass
+			except Exception as e:
+				print(f'Warning: Failed to capture screenshot: {e}')
+
 			await queue.put(
 				{
 					'type': 'step',
@@ -111,6 +167,7 @@ async def run_agent(request: CommandRequest):
 					'memory': getattr(output, 'memory', '') or '',
 					'url': state.url,
 					'elapsed': elapsed,
+					'screenshot': screenshot_b64,
 				}
 			)
 
@@ -202,6 +259,7 @@ async def run_agent(request: CommandRequest):
 							browser=browser,
 							use_vision=True,
 							register_new_step_callback=step_callback,
+							extend_system_message=SYSTEM_PROMPT_EXT,
 						)
 
 						# O Agente usará uma aba no browser já aberto
@@ -210,7 +268,7 @@ async def run_agent(request: CommandRequest):
 						final_url = 'about:blank'
 						try:
 							final_url = await browser.get_current_page_url()
-						except:
+						except Exception:
 							pass
 
 						summary = 'Tarefa finalizada.'
@@ -241,7 +299,6 @@ async def run_agent(request: CommandRequest):
 			except Exception as e:
 				await queue.put({'type': 'error', 'message': f'Erro fatal: {str(e)}'})
 			finally:
-				# REMOVIDO: browser.close() - O navegador permanece aberto para a próxima tarefa
 				logger.removeHandler(handler)
 				await queue.put({'type': 'end'})
 
@@ -303,7 +360,7 @@ async def save_logs(request: dict):
 async def list_reports():
 	try:
 		reports_dir = 'reports'
-		if not os.path.exists(reports_dir):
+		if not os.path.exists(reports_dir):  # noqa: ASYNC240
 			os.makedirs(reports_dir)
 		return {'reports': os.listdir(reports_dir)}
 	except Exception as e:
