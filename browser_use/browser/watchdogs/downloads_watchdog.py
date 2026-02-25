@@ -839,6 +839,32 @@ class DownloadsWatchdog(BaseWatchdog):
 		except Exception as e:
 			self.logger.error(f'[DownloadsWatchdog] Error tracking download: {e}')
 
+	@staticmethod
+	def _find_new_download(directory: Path | str, known_files: set[str]) -> tuple[Path, int] | None:
+		"""Finds a new download file in the directory.
+
+		This method performs blocking I/O and should be run in a thread.
+		"""
+		# Ensure directory is a Path object
+		dir_path = Path(directory)
+		if not dir_path.exists():
+			return None
+
+		try:
+			for file_path in dir_path.iterdir():
+				# Skip hidden files and known files
+				if file_path.is_file() and not file_path.name.startswith('.') and file_path.name not in known_files:
+					try:
+						file_size = file_path.stat().st_size
+						if file_size > 4:
+							return file_path, file_size
+					except OSError:
+						pass
+		except OSError:
+			pass
+
+		return None
+
 	async def _handle_cdp_download(
 		self, event: DownloadWillBeginEvent, target_id: TargetID, session_id: SessionID | None
 	) -> None:
@@ -886,53 +912,44 @@ class DownloadsWatchdog(BaseWatchdog):
 		while asyncio.get_event_loop().time() - start_time < max_wait:  # noqa: ASYNC110
 			await asyncio.sleep(5.0)  # Check every 5 seconds
 
-			if Path(downloads_dir).exists():
-				for file_path in Path(downloads_dir).iterdir():
-					# Skip hidden files and files that were already there
-					if (
-						file_path.is_file()
-						and not file_path.name.startswith('.')
-						and file_path.name not in self._initial_downloads_snapshot
-					):
-						# Add to snapshot immediately to prevent duplicate detection
-						self._initial_downloads_snapshot.add(file_path.name)
-						# Check if file has content (> 4 bytes)
-						try:
-							file_size = file_path.stat().st_size
-							if file_size > 4:
-								# Found a new download!
-								self.logger.debug(
-									f'[DownloadsWatchdog] ✅ Found downloaded file: {file_path} ({file_size} bytes)'
-								)
+			# Offload blocking file scan to thread
+			result = await asyncio.to_thread(self._find_new_download, downloads_dir, set(self._initial_downloads_snapshot))
 
-								# Determine file type from extension
-								file_ext = file_path.suffix.lower().lstrip('.')
-								file_type = file_ext if file_ext else None
+			if result:
+				file_path, file_size = result
 
-								# Dispatch download event
-								# Skip if already handled by progress/JS fetch
-								info = self._cdp_downloads_info.get(guid, {})
-								if info.get('handled'):
-									return
-								self.event_bus.dispatch(
-									FileDownloadedEvent(
-										guid=guid,
-										url=download_url,
-										path=str(file_path),
-										file_name=file_path.name,
-										file_size=file_size,
-										file_type=file_type,
-									)
-								)
-							# Mark as handled after dispatch
-							try:
-								if guid in self._cdp_downloads_info:
-									self._cdp_downloads_info[guid]['handled'] = True
-							except (KeyError, AttributeError):
-								pass
-							return
-						except Exception as e:
-							self.logger.debug(f'[DownloadsWatchdog] Error checking file {file_path}: {e}')
+				# Add to snapshot immediately to prevent duplicate detection
+				self._initial_downloads_snapshot.add(file_path.name)
+
+				# Found a new download!
+				self.logger.debug(f'[DownloadsWatchdog] ✅ Found downloaded file: {file_path} ({file_size} bytes)')
+
+				# Determine file type from extension
+				file_ext = file_path.suffix.lower().lstrip('.')
+				file_type = file_ext if file_ext else None
+
+				# Dispatch download event
+				# Skip if already handled by progress/JS fetch
+				info = self._cdp_downloads_info.get(guid, {})
+				if info.get('handled'):
+					return
+				self.event_bus.dispatch(
+					FileDownloadedEvent(
+						guid=guid,
+						url=download_url,
+						path=str(file_path),
+						file_name=file_path.name,
+						file_size=file_size,
+						file_type=file_type,
+					)
+				)
+				# Mark as handled after dispatch
+				try:
+					if guid in self._cdp_downloads_info:
+						self._cdp_downloads_info[guid]['handled'] = True
+				except (KeyError, AttributeError):
+					pass
+				return
 
 		self.logger.warning(f'[DownloadsWatchdog] Download did not complete within {max_wait} seconds')
 
