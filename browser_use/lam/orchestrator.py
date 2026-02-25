@@ -1,7 +1,7 @@
 import operator
 from typing import Annotated, Any, Dict, List, Literal, Optional, TypedDict, cast
 
-from langchain_core.messages import BaseMessage, HumanMessage
+from browser_use.llm.messages import UserMessage, SystemMessage, BaseMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
@@ -52,13 +52,15 @@ class LAMOrchestrator:
 
 		# Conditional Logic for Executor Loop
 		def should_continue(state: AgentState) -> Literal['executor', 'summarizer', '__end__']:
-			plan = state.get('plan', [])
-			current_index = state.get('current_step_index', 0)
+			raw_index = state.get('current_step_index', 0)
+			current_index = int(raw_index) if raw_index is not None else 0
+			
+			plan_list = state.get('plan') or []
 
-			if not plan:
+			if not plan_list:
 				return '__end__'
 
-			if current_index < len(plan):
+			if current_index < len(plan_list):
 				return 'executor'
 
 			return 'summarizer'
@@ -76,25 +78,26 @@ class LAMOrchestrator:
 			return {'plan': []}
 
 		last_message = messages[-1]
-		if isinstance(last_message, BaseMessage):
+		if hasattr(last_message, 'content'):
 			user_request = str(last_message.content)
 		else:
 			user_request = str(last_message)
 
 		print(f'[LAM] Planning task: {user_request}')
-		plan = self.planner.plan_task(user_request)
+		plan = await self.planner.plan_task(user_request)
 
 		return {'plan': plan, 'current_step_index': 0}
 
 	async def executor_node(self, state: AgentState):
-		plan = state.get('plan', [])
-		current_index = state.get('current_step_index', 0)
+		plan = state.get('plan') or []
+		raw_index = state.get('current_step_index', 0)
+		current_index = int(raw_index) if raw_index is not None else 0
 
 		# Guard clause
 		if not plan or current_index >= len(plan):
 			return {}
 
-		step = plan[current_index]
+		step = cast(Dict[str, Any], plan[current_index])
 		print(f'[LAM] Executing step {current_index + 1}/{len(plan)}: {step.get("description")}')
 
 		result = await self.executor.execute_step(step)
@@ -106,13 +109,14 @@ class LAMOrchestrator:
 		messages = state.get('messages', [])
 		user_query = 'Unknown task'
 		if messages:
-			if isinstance(messages[0], BaseMessage):
-				user_query = str(messages[0].content)
+			msg = messages[0]
+			if hasattr(msg, 'content'):
+				user_query = str(msg.content)
 			else:
-				user_query = str(messages[0])
+				user_query = str(msg)
 
 		print(f'[LAM] Summarizing {len(results)} results...')
-		summary = self.summarizer.summarize_results(results, user_query)
+		summary = await self.summarizer.summarize_results(results, user_query)
 
 		return {'final_output': summary}
 
@@ -121,7 +125,7 @@ class LAMOrchestrator:
 		Runs the graph with the given input message.
 		"""
 		initial_state: AgentState = {
-			'messages': [HumanMessage(content=input_message)],
+			'messages': [UserMessage(content=input_message)],
 			'plan': [],
 			'current_step_index': 0,
 			'results': [],

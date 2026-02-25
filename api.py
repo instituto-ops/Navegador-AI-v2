@@ -14,6 +14,9 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 # browser-use imports
+import sys
+import browser_use
+print(f"[DEBUG] browser_use path: {browser_use.__file__}")
 from browser_use import Browser
 from browser_use.lam.orchestrator import LAMOrchestrator
 
@@ -57,59 +60,65 @@ async def health():
 
 async def get_or_create_browser():
 	global shared_browser
+	import traceback
 	async with shared_browser_lock:
 		if shared_browser is None:
-			print('[SYSTEM] Inicializando Instância Global do Navegador...')
+			try:
+				print('[SYSTEM] Inicializando Instância Global do Navegador...')
 
-			# Check for Cloud API Key
-			cloud_key = os.getenv('BROWSER_USE_API_KEY')
-			if cloud_key:
-				print('🚀 [MODE] Using Browser-Use Cloud (Stealth & Anti-Detect)')
-				shared_browser = Browser(
-					use_cloud=True,
-					cloud_profile_id=os.getenv('CLOUD_PROFILE_ID'),  # Optional
-				)
-			else:
-				print('🛡️ [MODE] Using Local Browser (Hardened)')
-				abs_profile_path = os.path.abspath(os.path.join(os.getcwd(), 'browser_profile'))  # noqa: ASYNC240
-				if not os.path.exists(abs_profile_path):  # noqa: ASYNC240
-					os.makedirs(abs_profile_path)
+				# Check for Cloud API Key
+				cloud_key = os.getenv('BROWSER_USE_API_KEY')
+				if cloud_key:
+					print('🚀 [MODE] Using Browser-Use Cloud (Stealth & Anti-Detect)')
+					shared_browser = Browser(
+						use_cloud=True,
+						cloud_profile_id=os.getenv('CLOUD_PROFILE_ID'),  # Optional
+					)
+				else:
+					print('🛡️ [MODE] Using Local Browser (Hardened)')
+					abs_profile_path = os.path.abspath(os.path.join(os.getcwd(), 'browser_profile'))  # noqa: ASYNC240
+					if not os.path.exists(abs_profile_path):  # noqa: ASYNC240
+						os.makedirs(abs_profile_path)
 
-				# Cross-platform executable detection
-				chrome_path = os.getenv('BROWSER_EXECUTABLE_PATH')
-				if not chrome_path:
-					# Fallback for Windows
-					for p in [
-						r'C:\Program Files\Google\Chrome\Application\chrome.exe',
-						r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
-					]:
-						if os.path.exists(p):  # noqa: ASYNC240
-							chrome_path = p
-							break
+					# Cross-platform executable detection
+					chrome_path = os.getenv('BROWSER_EXECUTABLE_PATH')
+					if not chrome_path:
+						# Fallback for Windows
+						for p in [
+							r'C:\Program Files\Google\Chrome\Application\chrome.exe',
+							r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+						]:
+							if os.path.exists(p):  # noqa: ASYNC240
+								chrome_path = p
+								break
 
-				# User Agent Rotation
-				try:
-					ua = UserAgent()
-					user_agent = ua.random
-				except Exception:
-					user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+					# User Agent Rotation
+					try:
+						ua = UserAgent()
+						user_agent = ua.random
+					except Exception:
+						user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
-				print(f'🎭 [STEALTH] User-Agent: {user_agent}')
+					print(f'🎭 [STEALTH] User-Agent: {user_agent}')
 
-				is_headless = os.getenv('HEADLESS', 'false').lower() == 'true'
-				shared_browser = Browser(
-					headless=is_headless,
-					keep_alive=True,
-					executable_path=chrome_path,
-					user_data_dir=abs_profile_path,
-					user_agent=user_agent,
-					args=[
-						'--disable-blink-features=AutomationControlled',
-						'--no-sandbox',
-						'--disable-infobars',
-						'--window-size=1280,720',
-					],
-				)
+					is_headless = os.getenv('HEADLESS', 'false').lower() == 'true'
+					shared_browser = Browser(
+						headless=is_headless,
+						keep_alive=True,
+						executable_path=chrome_path,
+						user_data_dir=abs_profile_path,
+						user_agent=user_agent,
+						args=[
+							'--disable-blink-features=AutomationControlled',
+							'--no-sandbox',
+							'--disable-infobars',
+							'--window-size=1280,720',
+						],
+					)
+			except Exception as e:
+				print(f'[ERROR] Falha crítica ao inicializar navegador: {e}')
+				traceback.print_exc()
+				raise e
 
 		return shared_browser
 
@@ -132,7 +141,7 @@ async def run_agent(request: CommandRequest):
 	loop = asyncio.get_running_loop()
 
 	async def event_generator():
-		queue = asyncio.Queue()
+		queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
 
 		# technical logging redirect
 		logger = logging.getLogger('browser_use')
@@ -147,21 +156,33 @@ async def run_agent(request: CommandRequest):
 				browser = await get_or_create_browser()
 
 				# Instantiate LAM Orchestrator
-				# Determine model based on request (simplified logic here)
-				model_name = 'gpt-4o'
+				# Determine model based on request (mapping frontend strings to LAM prefixes)
+				model_name = 'gpt-4o' # Default
 				if request.model == 'ollama':
 					model_name = 'ollama/llama3.2'
 				elif request.model == 'smol':
 					model_name = 'ollama/qwen2.5:3b'
+				elif request.model == 'groq':
+					model_name = 'groq/llama-3.3-70b-versatile'
+				elif request.model == 'openrouter':
+					model_name = 'openrouter/meta-llama/llama-3.3-70b-instruct:free'
+				elif request.model == 'vision':
+					model_name = 'gpt-4o' # Primary vision model
+				elif request.model == 'auto':
+					# Attempt to use primary model from .env if auto is selected
+					primary = os.getenv('PRIMARY_MODEL', 'groq')
+					if primary == 'groq':
+						model_name = 'groq/llama-3.3-70b-versatile'
+					elif primary == 'openrouter':
+						model_name = 'openrouter/meta-llama/llama-3.3-70b-instruct:free'
 
-				# If user specifically requests a model in the command or context, we might want to pass it
-				# For now, sticking to request.model mapping
+				print(f'[SYSTEM] Model selected for LAM: {model_name}')
 
 				orchestrator = LAMOrchestrator(browser=browser, model_name=model_name)
 
 				# Use astream instead of run directly on orchestrator because orchestrator.run is an async generator
 				async for event in orchestrator.run(request.command):
-					elapsed = round(time.time() - start_time, 1)
+					elapsed = float(round(time.time() - start_time, 1))
 
 					if 'planner' in event:
 						plan_data = event['planner'].get('plan', [])
@@ -203,7 +224,7 @@ async def run_agent(request: CommandRequest):
 									'step': step_info.get('description', 'Action'),
 									'thought': f'Executed: {step_info.get("action_type")} - {outcome}',
 									'goal': step_info.get('description'),
-									'memory': f'Result: {str(res.get("result"))[:100]}...',
+									'memory': f'Result: {str(res.get("result"))[:100]}',
 									'url': '...',
 									'elapsed': elapsed,
 									'screenshot': screenshot_b64,
@@ -215,7 +236,7 @@ async def run_agent(request: CommandRequest):
 						final_url = 'about:blank'
 						try:
 							if browser:
-								page = await browser.get_current_page()
+								page = await cast(Any, browser).get_current_page()
 								# Cast to Any to access url if pyright complains about Page type
 								if page:
 									final_url = cast(Any, page).url
@@ -273,7 +294,7 @@ class SSELogHandler(logging.Handler):
 	def emit(self, record):
 		try:
 			log_entry = self.format(record)
-			elapsed = round(time.time() - self.start_time, 1)
+			elapsed = float(round(time.time() - self.start_time, 1))
 			self.loop.call_soon_threadsafe(
 				asyncio.create_task, self.queue.put({'type': 'info', 'message': f'[SYS] {log_entry}', 'elapsed': elapsed})
 			)
