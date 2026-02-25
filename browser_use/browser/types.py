@@ -1,13 +1,16 @@
-from typing import TypedDict, List, NotRequired
+from typing import NotRequired, TypedDict
+
 
 class StorageStateOriginStorage(TypedDict):
 	name: str
 	value: str
 
+
 class StorageStateOrigin(TypedDict):
 	origin: str
-	localStorage: NotRequired[List[StorageStateOriginStorage]]
-	sessionStorage: NotRequired[List[StorageStateOriginStorage]]
+	localStorage: NotRequired[list[StorageStateOriginStorage]]
+	sessionStorage: NotRequired[list[StorageStateOriginStorage]]
+
 
 class StorageStateCookie(TypedDict):
 	name: str
@@ -19,6 +22,7 @@ class StorageStateCookie(TypedDict):
 	secure: NotRequired[bool]
 	sameSite: NotRequired[str]
 
+
 class StorageState(TypedDict):
-	cookies: List[StorageStateCookie]
-	origins: List[StorageStateOrigin]
+	cookies: list[StorageStateCookie]
+	origins: list[StorageStateOrigin]

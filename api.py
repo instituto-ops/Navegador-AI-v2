@@ -313,7 +313,7 @@ async def list_reports():
 async def get_report(filename: str):
 	try:
 		path = os.path.join('reports', filename)
-		with open(path, 'r', encoding='utf-8') as f:
+		with open(path, encoding='utf-8') as f:
 			content = f.read()
 		return {'content': content}
 	except Exception as e:
