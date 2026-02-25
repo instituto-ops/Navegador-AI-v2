@@ -1,16 +1,17 @@
+import asyncio
+import json
+import logging
+import os
+import time
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import asyncio
-import time
-import logging
-import json
-import os
-from dotenv import load_dotenv
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 # browser-use imports
-from browser_use import Agent, Browser, ChatGroq, ChatMistral, ChatOpenAI, BrowserProfile
+from browser_use import Agent, Browser, BrowserProfile, ChatGroq, ChatOpenAI
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -253,7 +254,7 @@ async def list_reports():
 async def get_report(filename: str):
     try:
         path = os.path.join("reports", filename)
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
         return {"content": content}
     except Exception as e:

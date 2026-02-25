@@ -1750,6 +1750,14 @@ class DefaultActionWatchdog(BaseWatchdog):
 				# Return input coordinates for metadata
 				return input_coordinates
 
+			# Check if we should use rapid input (direct value setting) for long text
+			# Only apply optimization if we are clearing the field (overwriting), otherwise we need to append which is complex
+			threshold = self.browser_session.browser_profile.typing_max_speed_threshold
+			if threshold > 0 and len(text) > threshold and clear:
+				self.logger.debug(f'🚀 Fast typing triggered (text length {len(text)} > {threshold})')
+				await self._set_value_directly(element_node, text, object_id, cdp_session)
+				return input_coordinates
+
 			# Step 3: Clear existing text if requested (only for regular inputs that support typing)
 			if clear:
 				cleared_successfully = await self._clear_text_field(object_id=object_id, cdp_session=cdp_session)
@@ -1833,7 +1841,8 @@ class DefaultActionWatchdog(BaseWatchdog):
 					)
 
 					# Small delay to emulate human typing speed
-					await asyncio.sleep(0.005)
+					delay = self.browser_session.browser_profile.typing_delay
+					await asyncio.sleep(max(0, delay - 0.001))
 
 					# Step 2: Send char event (WITH text parameter) - this is crucial for text input
 					await cdp_session.cdp_client.send.Input.dispatchKeyEvent(

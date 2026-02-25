@@ -646,6 +646,16 @@ class BrowserProfile(BrowserConnectArgs, BrowserLaunchPersistentContextArgs, Bro
 
 	wait_between_actions: float = Field(default=0.1, description='Time to wait between actions.')
 
+	# --- Input/Typing ---
+	typing_max_speed_threshold: int = Field(
+		default=50,
+		description='Characters threshold to switch to rapid text input (bulk input) instead of human-like character-by-character typing. Set to 0 to always use human-like typing.',
+	)
+	typing_delay: float = Field(
+		default=0.006,
+		description='Delay between keystrokes when typing character-by-character (simulating human speed).',
+	)
+
 	# --- UI/viewport/DOM ---
 	highlight_elements: bool = Field(default=True, description='Highlight interactive elements on the page.')
 	dom_highlight_elements: bool = Field(
