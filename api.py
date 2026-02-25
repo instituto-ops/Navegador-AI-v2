@@ -213,7 +213,7 @@ async def run_agent(request: CommandRequest):
 						final_url = 'about:blank'
 						try:
 							final_url = await browser.get_current_page_url()
-						except:
+						except Exception:
 							pass
 
 						summary = 'Tarefa finalizada.'
