@@ -1,9 +1,10 @@
 import json
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
+
 
 class CognitivePlanner:
     """
@@ -51,6 +52,9 @@ class CognitivePlanner:
         try:
             response = self.llm.invoke(messages)
             content = response.content
+            if not isinstance(content, str):
+                 content = str(content)
+
             # Extract JSON from potential markdown blocks
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()

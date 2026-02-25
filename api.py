@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import time
+from typing import Any, cast
 
 import aiofiles
 from dotenv import load_dotenv
@@ -13,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 # browser-use imports
-from browser_use import Agent, Browser, ChatGroq, ChatOpenAI
+from browser_use import Browser
 from browser_use.lam.orchestrator import LAMOrchestrator
 
 # Carregar variáveis de ambiente
@@ -147,11 +148,11 @@ async def run_agent(request: CommandRequest):
 
 				# Instantiate LAM Orchestrator
 				# Determine model based on request (simplified logic here)
-				model_name = "gpt-4o"
+				model_name = 'gpt-4o'
 				if request.model == 'ollama':
-					model_name = "ollama/llama3.2"
+					model_name = 'ollama/llama3.2'
 				elif request.model == 'smol':
-					model_name = "ollama/qwen2.5:3b"
+					model_name = 'ollama/qwen2.5:3b'
 
 				# If user specifically requests a model in the command or context, we might want to pass it
 				# For now, sticking to request.model mapping
@@ -164,12 +165,8 @@ async def run_agent(request: CommandRequest):
 
 					if 'planner' in event:
 						plan_data = event['planner'].get('plan', [])
-						plan_text = "\\n".join([f"{i+1}. {step.get('description')}" for i, step in enumerate(plan_data)])
-						await queue.put({
-							'type': 'info',
-							'message': f'📝 Plano gerado:\\n{plan_text}',
-							'elapsed': elapsed
-						})
+						plan_text = '\\n'.join([f'{i + 1}. {step.get("description")}' for i, step in enumerate(plan_data)])
+						await queue.put({'type': 'info', 'message': f'📝 Plano gerado:\\n{plan_text}', 'elapsed': elapsed})
 
 					if 'executor' in event:
 						# In LangGraph with annotated state, results list grows.
@@ -200,34 +197,40 @@ async def run_agent(request: CommandRequest):
 							except Exception:
 								pass
 
-							await queue.put({
-								'type': 'step',
-								'step': step_info.get('description', 'Action'),
-								'thought': f"Executed: {step_info.get('action_type')} - {outcome}",
-								'goal': step_info.get('description'),
-								'memory': f"Result: {str(res.get('result'))[:100]}...",
-								'url': '...',
-								'elapsed': elapsed,
-								'screenshot': screenshot_b64
-							})
+							await queue.put(
+								{
+									'type': 'step',
+									'step': step_info.get('description', 'Action'),
+									'thought': f'Executed: {step_info.get("action_type")} - {outcome}',
+									'goal': step_info.get('description'),
+									'memory': f'Result: {str(res.get("result"))[:100]}...',
+									'url': '...',
+									'elapsed': elapsed,
+									'screenshot': screenshot_b64,
+								}
+							)
 
 					if 'summarizer' in event:
 						summary = event['summarizer'].get('final_output', 'Done')
-						final_url = "about:blank"
+						final_url = 'about:blank'
 						try:
 							if browser:
 								page = await browser.get_current_page()
-								final_url = page.url
+								# Cast to Any to access url if pyright complains about Page type
+								if page:
+									final_url = cast(Any, page).url
 						except:
 							pass
 
-						await queue.put({
-							'type': 'done',
-							'message': 'Tarefa finalizada.',
-							'final_url': final_url,
-							'summary': summary,
-							'total_time': elapsed
-						})
+						await queue.put(
+							{
+								'type': 'done',
+								'message': 'Tarefa finalizada.',
+								'final_url': final_url,
+								'summary': summary,
+								'total_time': elapsed,
+							}
+						)
 
 			except Exception as e:
 				await queue.put({'type': 'error', 'message': f'Erro fatal: {str(e)}'})

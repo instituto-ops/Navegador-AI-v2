@@ -1,15 +1,16 @@
-import asyncio
 import operator
-from typing import List, Dict, Any, Optional, Literal, TypedDict, Annotated
+from typing import Annotated, Any, Dict, List, Literal, Optional, TypedDict, cast
 
 from langchain_core.messages import BaseMessage, HumanMessage
-from langgraph.graph import StateGraph, END
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
 
 from browser_use import Browser
-from browser_use.lam.planner import CognitivePlanner
 from browser_use.lam.executor import LogicExecutor
+from browser_use.lam.planner import CognitivePlanner
 from browser_use.lam.summarizer import SemanticSummarizer
+
 
 # Define AgentState with Annotated for proper state merging/appending
 class AgentState(TypedDict):
@@ -77,7 +78,10 @@ class LAMOrchestrator:
             return {"plan": []}
 
         last_message = messages[-1]
-        user_request = last_message.content if isinstance(last_message, BaseMessage) else str(last_message)
+        if isinstance(last_message, BaseMessage):
+            user_request = str(last_message.content)
+        else:
+             user_request = str(last_message)
 
         print(f"[LAM] Planning task: {user_request}")
         plan = self.planner.plan_task(user_request)
@@ -108,7 +112,12 @@ class LAMOrchestrator:
     async def summarizer_node(self, state: AgentState):
         results = state.get("results", [])
         messages = state.get("messages", [])
-        user_query = messages[0].content if messages else "Unknown task"
+        user_query = "Unknown task"
+        if messages:
+             if isinstance(messages[0], BaseMessage):
+                 user_query = str(messages[0].content)
+             else:
+                 user_query = str(messages[0])
 
         print(f"[LAM] Summarizing {len(results)} results...")
         summary = self.summarizer.summarize_results(results, user_query)
@@ -119,7 +128,7 @@ class LAMOrchestrator:
         """
         Runs the graph with the given input message.
         """
-        initial_state = {
+        initial_state: AgentState = {
             "messages": [HumanMessage(content=input_message)],
             "plan": [],
             "current_step_index": 0,
@@ -128,7 +137,9 @@ class LAMOrchestrator:
         }
 
         # Use a generic thread_id for this session since we don't have multi-user context yet
-        config = {"configurable": {"thread_id": "1"}}
+        config_dict = {"configurable": {"thread_id": "1"}}
+        # Cast to RunnableConfig to satisfy type checker
+        config = cast(RunnableConfig, config_dict)
 
         async for event in self.graph.astream(initial_state, config=config):
             yield event

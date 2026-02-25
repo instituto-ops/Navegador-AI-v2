@@ -1,7 +1,9 @@
+from typing import Any, Dict, List
+
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
-from typing import List, Dict, Any
+from langchain_openai import ChatOpenAI
+
 
 class SemanticSummarizer:
     """
@@ -41,7 +43,10 @@ class SemanticSummarizer:
 
         try:
             response = self.llm.invoke(messages)
-            return response.content
+            content = response.content
+            if isinstance(content, str):
+                return content
+            return str(content)
         except Exception as e:
             print(f"Error generating summary: {e}")
             return "Task completed."

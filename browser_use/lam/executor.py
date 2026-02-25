@@ -1,7 +1,7 @@
-import asyncio
-from typing import Dict, Any, List, Optional
+from typing import Any, cast
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
+from langchain_core.language_models.chat_models import BaseChatModel
 from browser_use import Agent, Browser
 import json
 
@@ -15,31 +15,26 @@ class LogicExecutor:
         self.browser = browser
         self.model_name = model_name
         self.llm = self._get_llm(model_name)
-        # We could maintain a persistent agent here if browser-use supports it,
-        # but for now we re-instantiate with shared browser to keep session alive.
-        # To truly persist reasoning context, we'd need to pass history.
 
-    def _get_llm(self, model_name: str):
+    def _get_llm(self, model_name: str) -> BaseChatModel:
         if model_name.startswith("ollama/"):
             # Ensure we strip 'ollama/' prefix correctly for the model name if needed
             # For ollama lib, model name is usually just 'llama3.2'
-            return ChatOllama(model=model_name.replace("ollama/", ""))
-        return ChatOpenAI(model=model_name)
+            return cast(BaseChatModel, ChatOllama(model=model_name.replace("ollama/", "")))
+        return cast(BaseChatModel, ChatOpenAI(model=model_name))
 
-    async def execute_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """
         Executes a single step using the configured browser and LLM.
         """
         task_description = f"Perform action: {step.get('description', '')}. Details: {json.dumps(step.get('details', {}))}"
 
-        # Determine if we should switch model for this specific step type
-        # E.g. simple navigation -> use faster model?
-        # For now, stick to initialized LLM.
-
         try:
+            # Cast self.llm to Any to avoid pyright complaining about BaseChatModel protocol mismatch
+            # The actual runtime object (ChatOpenAI or ChatOllama) is compatible with what Agent expects
             agent = Agent(
                 task=task_description,
-                llm=self.llm,
+                llm=cast(Any, self.llm),
                 browser=self.browser,
                 use_vision=True
             )
