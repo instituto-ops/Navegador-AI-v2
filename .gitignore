@@ -14,3 +14,6 @@ __pycache__/
 .venv/
 .ruff_cache/
 npm_output.log
+*.pyc
+**/*.pyc
+**/__pycache__/
