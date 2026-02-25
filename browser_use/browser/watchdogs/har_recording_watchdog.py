@@ -11,6 +11,7 @@ import base64
 import hashlib
 import json
 from dataclasses import dataclass, field
+from datetime import UTC
 from importlib import metadata as importlib_metadata
 from pathlib import Path
 from typing import ClassVar
@@ -27,7 +28,6 @@ from cdp_use.cdp.page.events import FrameNavigatedEvent, LifecycleEventEvent
 
 from browser_use.browser.events import BrowserConnectedEvent, BrowserStopEvent
 from browser_use.browser.watchdog_base import BaseWatchdog
-from datetime import UTC
 
 
 @dataclass
@@ -674,7 +674,7 @@ class HarRecordingWatchdog(BaseWatchdog):
 		if timestamp is None:
 			return ''
 		try:
-			from datetime import datetime, timezone
+			from datetime import datetime
 
 			return datetime.fromtimestamp(timestamp, tz=UTC).isoformat().replace('+00:00', 'Z')
 		except Exception:
@@ -707,7 +707,7 @@ class HarRecordingWatchdog(BaseWatchdog):
 		started = ''
 		try:
 			if e.wall_time_request is not None:
-				from datetime import datetime, timezone
+				from datetime import datetime
 
 				started = datetime.fromtimestamp(e.wall_time_request, tz=UTC).isoformat().replace('+00:00', 'Z')
 		except Exception:

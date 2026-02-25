@@ -1,6 +1,6 @@
 """Shared utilities for CLI command handlers."""
 
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime
 
 from browser_use_sdk import BrowserUse
 

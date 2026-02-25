@@ -4,6 +4,7 @@ Email management to enable 2fa.
 
 import asyncio
 import logging
+from datetime import UTC
 
 # run `pip install agentmail` to install the library
 from agentmail import AsyncAgentMail, Message, MessageReceivedEvent, Subscribe  # type: ignore
@@ -11,7 +12,6 @@ from agentmail.inboxes.types.inbox import Inbox  # type: ignore
 from agentmail.inboxes.types.inbox_id import InboxId  # type: ignore
 
 from browser_use import Tools
-from datetime import UTC
 
 # Configure basic logging if not already configured
 if not logging.getLogger().handlers:
@@ -137,7 +137,7 @@ class EmailTools(Tools):
 			1. Check for unread emails within the last max_age_minutes
 			2. If no recent unread email, wait 30 seconds for new email via websocket
 			"""
-			from datetime import datetime, timedelta, timezone
+			from datetime import datetime, timedelta
 
 			inbox = await self.get_or_create_inbox_client()
 

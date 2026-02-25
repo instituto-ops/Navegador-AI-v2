@@ -1,6 +1,6 @@
 import base64
 import os
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 
 import anyio

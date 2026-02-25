@@ -4,7 +4,7 @@ import asyncio
 import logging
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Self, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, Self, cast, overload
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 

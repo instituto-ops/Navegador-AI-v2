@@ -201,14 +201,10 @@ async def run_agent(request: CommandRequest):
 							screenshot_b64 = None
 							# Extract screenshot from the latest state if possible
 							try:
-								# Version 0.11.13 might have different state access
-								current_page = await browser_instance.get_current_page()
-								if current_page:
-									screenshot_b64 = await current_page.screenshot(type='jpeg', quality=50, full_page=False)
-									import base64
-
-									if isinstance(screenshot_b64, bytes):
-										screenshot_b64 = base64.b64encode(screenshot_b64).decode('utf-8')
+								# Attempt to get the latest screenshot from the browser state
+								state = await browser_instance.get_browser_state_summary()
+								if state and state.screenshot:
+									screenshot_b64 = state.screenshot
 							except Exception as e:
 								print(f'[DEBUG] Screenshot failed: {e}')
 
@@ -234,9 +230,9 @@ async def run_agent(request: CommandRequest):
 						final_url = 'about:blank'
 						try:
 							# ROBUST PAGE EXTRACTION
-							current_page = await browser_instance.get_current_page()
-							if current_page:
-								final_url = current_page.url
+							state = await browser_instance.get_browser_state_summary()
+							if state and state.url:
+								final_url = state.url
 						except Exception as e:
 							print(f'[DEBUG] Final URL extraction failed: {e}')
 

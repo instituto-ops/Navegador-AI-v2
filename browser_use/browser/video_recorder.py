@@ -5,7 +5,6 @@ import io
 import logging
 import math
 from pathlib import Path
-from typing import Optional
 
 from browser_use.browser.profile import ViewportSize
 
