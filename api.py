@@ -17,7 +17,6 @@ from pydantic import BaseModel
 
 # browser-use imports
 import browser_use
-print(f"[DEBUG] browser_use path: {browser_use.__file__}")
 from browser_use import Browser
 from browser_use.lam.orchestrator import LAMOrchestrator
 
@@ -153,7 +152,7 @@ async def run_agent(request: CommandRequest):
 		async def run_task():
 			nonlocal start_time
 			try:
-				browser = await get_or_create_browser()
+				browser_instance = await get_or_create_browser()
 
 				# Instantiate LAM Orchestrator
 				# Determine model based on request (mapping frontend strings to LAM prefixes)
@@ -166,6 +165,10 @@ async def run_agent(request: CommandRequest):
 					model_name = 'groq/llama-3.3-70b-versatile'
 				elif request.model == 'openrouter':
 					model_name = 'openrouter/meta-llama/llama-3.3-70b-instruct:free'
+				elif request.model == 'puter':
+					# Puter "Luxury Fallback" - Using Gemini 2.0 via OpenRouter as it matches Puter's promise
+					model_name = 'openrouter/google/gemini-2.0-flash-001'
+					await queue.put({'type': 'info', 'message': '💎 Usando Puter (Gemini 2.0 Luxury Fallback)...', 'elapsed': 0})
 				elif request.model == 'vision':
 					model_name = 'gpt-4o' # Primary vision model
 				elif request.model == 'auto':
@@ -178,7 +181,7 @@ async def run_agent(request: CommandRequest):
 
 				print(f'[SYSTEM] Model selected for LAM: {model_name}')
 
-				orchestrator = LAMOrchestrator(browser=browser, model_name=model_name)
+				orchestrator = LAMOrchestrator(browser=browser_instance, model_name=model_name)
 
 				# Use astream instead of run directly on orchestrator because orchestrator.run is an async generator
 				async for event in orchestrator.run(request.command):
@@ -198,18 +201,21 @@ async def run_agent(request: CommandRequest):
 							history = res.get('history')
 
 							screenshot_b64 = None
-							# Try to extract screenshot from history safely
+							# Extract screenshot from the latest state if possible
 							try:
-								if history and hasattr(history, 'history') and history.history:
-									last_item = history.history[-1]
-									if hasattr(last_item, 'result') and last_item.result:
-										pass
-							except Exception:
-								pass
+								# Version 0.11.13 might have different state access
+								current_page = await browser_instance.get_current_page()
+								if current_page:
+									screenshot_b64 = await current_page.screenshot(type='jpeg', quality=50, full_page=False)
+									import base64
+									if isinstance(screenshot_b64, bytes):
+										screenshot_b64 = base64.b64encode(screenshot_b64).decode('utf-8')
+							except Exception as e:
+								print(f"[DEBUG] Screenshot failed: {e}")
 
 							res_val = res.get('result')
 							res_str = str(res_val) if res_val is not None else ''
-							memory_snippet = res_str[:100]
+							memory_snippet = res_str[:150]
 
 							await queue.put(
 								{
@@ -228,12 +234,12 @@ async def run_agent(request: CommandRequest):
 						summary = event['summarizer'].get('final_output', 'Done')
 						final_url = 'about:blank'
 						try:
-							if browser:
-								page = await cast(Any, browser).get_current_page()
-								if page:
-									final_url = cast(Any, page).url
-						except:
-							pass
+							# ROBUST PAGE EXTRACTION
+							current_page = await browser_instance.get_current_page()
+							if current_page:
+								final_url = current_page.url
+						except Exception as e:
+							print(f"[DEBUG] Final URL extraction failed: {e}")
 
 						await queue.put(
 							{
@@ -246,6 +252,7 @@ async def run_agent(request: CommandRequest):
 						)
 
 			except Exception as e:
+				traceback.print_exc()
 				await queue.put({'type': 'error', 'message': f'Erro fatal: {str(e)}'})
 			finally:
 				logger.removeHandler(handler)

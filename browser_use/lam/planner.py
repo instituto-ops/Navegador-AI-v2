@@ -20,7 +20,7 @@ class CognitivePlanner:
 		temp = 0.2
 
 		if model_name.startswith('ollama/'):
-			return ChatOllama(model=model_name.replace('ollama/', ''), temperature=temp)
+			return ChatOllama(model=model_name.replace('ollama/', ''))
 		
 		if model_name.startswith('groq/'):
 			api_key = os.getenv('GROQ_API_KEY')
