@@ -407,7 +407,7 @@ def test_is_menu_opener_step_detects_aria_haspopup():
 
 
 def test_is_menu_opener_step_detects_guidewire_toggle():
-	"""Test that _is_menu_opener_step detects Guidewire toggleSubMenu pattern."""
+	"""Test that is_menu_opener_step detects Guidewire toggleSubMenu pattern."""
 	llm = create_mock_llm(actions=None)
 	agent = Agent(task='Test task', llm=llm)
 	AgentOutput = agent.AgentOutput
@@ -445,7 +445,7 @@ def test_is_menu_opener_step_detects_guidewire_toggle():
 		metadata=StepMetadata(step_start_time=0, step_end_time=1, step_number=1, step_interval=0.1),
 	)
 
-	assert agent._is_menu_opener_step(history_item) is True
+	assert agent.action_executor.is_menu_opener_step(history_item) is True
 
 
 def test_is_menu_opener_step_returns_false_for_regular_element():
@@ -515,7 +515,7 @@ def test_is_menu_item_element_detects_role_menuitem():
 
 
 def test_is_menu_item_element_detects_guidewire_class():
-	"""Test that _is_menu_item_element detects Guidewire gw-action--inner class."""
+	"""Test that is_menu_item_element detects Guidewire gw-action--inner class."""
 	llm = create_mock_llm(actions=None)
 	agent = Agent(task='Test task', llm=llm)
 
@@ -534,11 +534,11 @@ def test_is_menu_item_element_detects_guidewire_class():
 		ax_name='New Contact',
 	)
 
-	assert agent._is_menu_item_element(menu_item) is True
+	assert agent.action_executor.is_menu_item_element(menu_item) is True
 
 
 def test_is_menu_item_element_returns_false_for_regular_element():
-	"""Test that _is_menu_item_element returns False for non-menu elements."""
+	"""Test that is_menu_item_element returns False for non-menu elements."""
 	llm = create_mock_llm(actions=None)
 	agent = Agent(task='Test task', llm=llm)
 

@@ -2658,7 +2658,6 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 
 			await self.close()
 
-
 	async def log_completion(self) -> None:
 		"""Log the completion of the task"""
 		# self._task_end_time = time.time()
@@ -2757,7 +2756,6 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 				extracted_content=f'Rerun completed: {success_count}/{len(results)} steps succeeded',
 				long_term_memory=f'Rerun completed: {success_count} steps succeeded, {error_count} errors',
 			)
-
 
 	async def rerun_history(
 		self,
@@ -2990,9 +2988,6 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 			self.history_manager.add_history_item(history_item)
 			self.logger.debug('📝 Saved initial actions to history as step 0')
 			self.logger.debug('Initial actions completed')
-
-
-
 
 	async def load_and_rerun(
 		self,
