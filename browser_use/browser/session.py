@@ -1304,7 +1304,6 @@ class BrowserSession(BaseModel):
 			Storage state dict with cookies in Playwright format.
 
 		"""
-		from pathlib import Path
 
 		# Get all cookies using Storage.getCookies (returns decrypted cookies from all domains)
 		cookies = await self._cdp_get_cookies()
@@ -1330,9 +1329,13 @@ class BrowserSession(BaseModel):
 		if output_path:
 			import json
 
-			output_file = Path(output_path).expanduser().resolve()
-			output_file.parent.mkdir(parents=True, exist_ok=True)
-			output_file.write_text(json.dumps(storage_state, indent=2))
+			from anyio import Path as AsyncPath
+
+			# Async path handling
+			output_file = AsyncPath(output_path)
+			output_file = await output_file.expanduser().resolve()
+			await output_file.parent.mkdir(parents=True, exist_ok=True)
+			await output_file.write_text(json.dumps(storage_state, indent=2))
 			self.logger.info(f'💾 Exported {len(cookies)} cookies to {output_file}')
 
 		return storage_state
@@ -3654,7 +3657,9 @@ class BrowserSession(BaseModel):
 		screenshot_data = base64.b64decode(result['data'])
 
 		if path:
-			Path(path).write_bytes(screenshot_data)
+			from anyio import Path as AsyncPath
+
+			await AsyncPath(path).write_bytes(screenshot_data)
 
 		return screenshot_data
 

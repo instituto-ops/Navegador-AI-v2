@@ -222,7 +222,6 @@ class ClickWatchdog(ActionWatchdogBase):
 		try:
 			import base64
 			import os
-			from pathlib import Path
 
 			# Get CDP session
 			cdp_session = await self.browser_session.get_or_create_cdp_session(focus=True)
@@ -265,15 +264,18 @@ class ClickWatchdog(ActionWatchdogBase):
 				filename = 'print.pdf'
 
 			# Ensure downloads directory exists
-			downloads_dir = Path(downloads_path).expanduser().resolve()
-			downloads_dir.mkdir(parents=True, exist_ok=True)
+			from anyio import Path as AsyncPath
+
+			downloads_dir = AsyncPath(downloads_path)
+			downloads_dir = await downloads_dir.expanduser().resolve()
+			await downloads_dir.mkdir(parents=True, exist_ok=True)
 
 			# Generate unique filename if file exists
 			final_path = downloads_dir / filename
-			if final_path.exists():
+			if await final_path.exists():
 				base, ext = os.path.splitext(filename)
 				counter = 1
-				while (downloads_dir / f'{base} ({counter}){ext}').exists():
+				while await (downloads_dir / f'{base} ({counter}){ext}').exists():
 					counter += 1
 				final_path = downloads_dir / f'{base} ({counter}){ext}'
 
@@ -283,7 +285,7 @@ class ClickWatchdog(ActionWatchdogBase):
 			async with await anyio.open_file(final_path, 'wb') as f:
 				await f.write(pdf_bytes)
 
-			file_size = final_path.stat().st_size
+			file_size = (await final_path.stat()).st_size
 			self.logger.info(f'✅ Generated PDF via CDP: {final_path} ({file_size:,} bytes)')
 
 			# Dispatch FileDownloadedEvent

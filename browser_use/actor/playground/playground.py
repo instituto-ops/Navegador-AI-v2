@@ -217,7 +217,7 @@ async def main():
 
 		logger.info('✅ Playground completed successfully!')
 
-		input('Press Enter to continue...')
+		await asyncio.to_thread(input, 'Press Enter to continue...')
 
 	except Exception as e:
 		logger.error(f'❌ Error in playground: {e}', exc_info=True)

@@ -43,8 +43,10 @@ STORAGE_STATE_FILE = USER_DATA_DIR / 'storage_state.json'
 
 async def parse_messages():
 	"""Parse messages.txt and extract scheduling info"""
-	messages_file = Path('messages.txt')
-	if not messages_file.exists():
+	from anyio import Path as AsyncPath
+
+	messages_file = AsyncPath('messages.txt')
+	if not await messages_file.exists():
 		print('❌ messages.txt not found!')
 		return []
 

@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-import os
 
 from browser_use.browser.events import (
 	GetDropdownOptionsEvent,
@@ -38,8 +37,17 @@ class ElementActionWatchdog(ActionWatchdogBase):
 			session_id = await self._get_session_id_for_element(element_node)
 
 			# Validate file before upload
-			if os.path.exists(event.file_path):
-				file_size = os.path.getsize(event.file_path)
+			# Note: In async context we should ideally use async path operations,
+			# but UploadFileEvent comes with a string path.
+			# For now checking with os.path.exists is blocking but standard practice
+			# until we fully migrate to anyio.Path everywhere.
+			# To satisfy ASYNC240, we use anyio.Path
+			from anyio import Path as AsyncPath
+
+			file_path_obj = AsyncPath(event.file_path)
+			if await file_path_obj.exists():
+				file_stat = await file_path_obj.stat()
+				file_size = file_stat.st_size
 				if file_size == 0:
 					msg = f'Upload failed - file {event.file_path} is empty (0 bytes).'
 					raise BrowserError(message=msg, long_term_memory=msg)
