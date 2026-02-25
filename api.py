@@ -7,6 +7,7 @@ import traceback
 from typing import Any, cast
 
 import aiofiles
+from anyio import Path
 from dotenv import load_dotenv
 from fake_useragent import UserAgent
 from fastapi import FastAPI, HTTPException
@@ -186,16 +187,10 @@ async def run_agent(request: CommandRequest):
 
 					if 'planner' in event:
 						plan_data = event['planner'].get('plan', [])
-						plan_text = '\\n'.join([f'{i + 1}. {step.get("description")}' for i, step in enumerate(plan_data)])
-						await queue.put({'type': 'info', 'message': f'📝 Plano gerado:\\n{plan_text}', 'elapsed': elapsed})
+						plan_text = '\n'.join([f'{i + 1}. {step.get("description")}' for i, step in enumerate(plan_data)])
+						await queue.put({'type': 'info', 'message': f'📝 Plano gerado:\n{plan_text}', 'elapsed': elapsed})
 
 					if 'executor' in event:
-						# In LangGraph with annotated state, results list grows.
-						# We want to show the LATEST result.
-						# But the event usually contains the output of the node execution.
-						# Our executor_node returns {"results": [new_result]}.
-						# So event['executor']['results'] is a list containing only the new result(s).
-
 						exec_results = event['executor'].get('results', [])
 						for res in exec_results:
 							step_info = res.get('step', {})
@@ -208,13 +203,7 @@ async def run_agent(request: CommandRequest):
 								if history and hasattr(history, 'history') and history.history:
 									last_item = history.history[-1]
 									if hasattr(last_item, 'result') and last_item.result:
-										# Result is a list of ActionResult
-										# Check if any has base64_image? No, usually screenshot is on state
 										pass
-									# Or maybe screenshot is stored on the state object inside history?
-									# browser-use internal structure varies.
-									# Let's assume for now we don't have it easily unless we modify LogicExecutor to return it explicitly.
-									pass
 							except Exception:
 								pass
 
@@ -241,7 +230,6 @@ async def run_agent(request: CommandRequest):
 						try:
 							if browser:
 								page = await cast(Any, browser).get_current_page()
-								# Cast to Any to access url if pyright complains about Page type
 								if page:
 									final_url = cast(Any, page).url
 						except:
@@ -310,8 +298,7 @@ class SSELogHandler(logging.Handler):
 async def save_logs(request: dict):
 	try:
 		content = request.get('logs', '')
-		async with aiofiles.open('last_session_logs.txt', 'w', encoding='utf-8') as f:
-			await f.write(content)
+		await Path('last_session_logs.txt').write_text(content, encoding='utf-8')
 		return {'status': 'success'}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
@@ -320,20 +307,36 @@ async def save_logs(request: dict):
 @app.get('/reports')
 async def list_reports():
 	try:
-		reports_dir = 'reports'
-		if not os.path.exists(reports_dir):  # noqa: ASYNC240
-			os.makedirs(reports_dir)
-		return {'reports': os.listdir(reports_dir)}
+		reports_dir = Path('reports')
+		if not await reports_dir.exists():
+			await reports_dir.mkdir()
+		reports = [p.name async for p in reports_dir.iterdir()]
+		return {'reports': reports}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get('/reports/{filename}')
 async def get_report(filename: str):
+	reports_dir = await Path('reports').resolve()
+	file_path = reports_dir / filename
 	try:
-		path = os.path.join('reports', filename)
-		async with aiofiles.open(path, encoding='utf-8') as f:
-			content = await f.read()
+		file_path = await file_path.resolve()
+	except OSError:
+		raise HTTPException(status_code=403, detail='Acesso negado: O caminho solicitado é inválido.')
+
+	# Security check: Ensure the file path is within the reports directory
+	try:
+		if os.path.commonpath([str(reports_dir), str(file_path)]) != str(reports_dir):
+			raise HTTPException(status_code=403, detail='Acesso negado: O caminho solicitado é inválido.')
+	except ValueError:
+		raise HTTPException(status_code=403, detail='Acesso negado: O caminho solicitado é inválido.')
+
+	if not await file_path.exists() or not await file_path.is_file():
+		raise HTTPException(status_code=404, detail='Relatório não encontrado.')
+
+	try:
+		content = await file_path.read_text(encoding='utf-8')
 		return {'content': content}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
