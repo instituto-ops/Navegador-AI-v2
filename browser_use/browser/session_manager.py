@@ -53,6 +53,10 @@ class SessionManager:
 		self._recovery_complete_event: asyncio.Event | None = None
 		self._recovery_task: asyncio.Task | None = None
 
+		# Initialization tracking (None when not initializing)
+		self._init_targets_to_wait: set[TargetID] | None = None
+		self._init_complete_event: asyncio.Event | None = None
+
 	async def start_monitoring(self) -> None:
 		"""Start monitoring Target attach/detach events.
 
@@ -458,6 +462,13 @@ class SessionManager:
 			except Exception as e:
 				self.logger.warning(f'[SessionManager] Failed to resume execution: {e}')
 
+		# Signal initialization progress if tracking (must be last step)
+		# Note: set/check is atomic in asyncio single thread loop
+		if self._init_targets_to_wait is not None and target_id in self._init_targets_to_wait:
+			self._init_targets_to_wait.discard(target_id)
+			if not self._init_targets_to_wait and self._init_complete_event:
+				self._init_complete_event.set()
+
 	async def _handle_target_info_changed(self, event: dict) -> None:
 		"""Handle Target.targetInfoChanged event.
 
@@ -749,8 +760,17 @@ class SessionManager:
 
 		self.logger.debug(f'[SessionManager] Discovered {len(existing_targets)} existing targets')
 
-		# Track target IDs for verification
-		target_ids_to_wait_for = []
+		# Initialize tracking mechanism
+		self._init_targets_to_wait = set()
+		self._init_complete_event = asyncio.Event()
+
+		# Add all potential targets first to avoid race conditions
+		for target in existing_targets:
+			self._init_targets_to_wait.add(target['targetId'])
+
+		# If no targets, we are done
+		if not self._init_targets_to_wait:
+			self._init_complete_event.set()
 
 		# Just attach to ALL existing targets - Chrome fires attachedToTarget events
 		# The on_attached handler (via create_task) does ALL the work
@@ -761,71 +781,33 @@ class SessionManager:
 			try:
 				# Just attach - event handler does everything
 				await cdp_client.send.Target.attachToTarget(params={'targetId': target_id, 'flatten': True})
-				target_ids_to_wait_for.append(target_id)
 			except Exception as e:
 				self.logger.debug(
 					f'[SessionManager] Failed to attach to existing target {target_id[:8]}... (type={target_type}): {e}'
 				)
+				# Target failed to attach, don't wait for it
+				if target_id in self._init_targets_to_wait:
+					self._init_targets_to_wait.discard(target_id)
+					if not self._init_targets_to_wait:
+						self._init_complete_event.set()
 
 		# Wait for event handlers to complete their work (they run via create_task)
 		# Use event-driven approach instead of polling for better performance
-		ready_event = asyncio.Event()
-
-		async def check_all_ready():
-			"""Check if all sessions are ready and signal completion."""
-			while True:
-				ready_count = 0
-				for tid in target_ids_to_wait_for:
-					session = self._get_session_for_target(tid)
-					if session:
-						target = self._targets.get(tid)
-						target_type = target.target_type if target else 'unknown'
-						# For pages, verify monitoring is enabled
-						if target_type in ('page', 'tab'):
-							if hasattr(session, '_lifecycle_events') and session._lifecycle_events is not None:
-								ready_count += 1
-						else:
-							# Non-page targets don't need monitoring
-							ready_count += 1
-
-				if ready_count == len(target_ids_to_wait_for):
-					ready_event.set()
-					return
-
-				await asyncio.sleep(0.05)
-
-		# Start checking in background
-		check_task = create_task_with_error_handling(
-			check_all_ready(), name='check_all_targets_ready', logger_instance=self.logger
-		)
-
 		try:
 			# Wait for completion with timeout
-			await asyncio.wait_for(ready_event.wait(), timeout=2.0)
+			if not self._init_complete_event.is_set():
+				await asyncio.wait_for(self._init_complete_event.wait(), timeout=2.0)
 		except TimeoutError:
-			# Timeout - count what's ready
-			ready_count = 0
-			for tid in target_ids_to_wait_for:
-				session = self._get_session_for_target(tid)
-				if session:
-					target = self._targets.get(tid)
-					target_type = target.target_type if target else 'unknown'
-					# For pages, verify monitoring is enabled
-					if target_type in ('page', 'tab'):
-						if hasattr(session, '_lifecycle_events') and session._lifecycle_events is not None:
-							ready_count += 1
-					else:
-						# Non-page targets don't need monitoring
-						ready_count += 1
+			# Timeout
+			remaining_count = len(self._init_targets_to_wait) if self._init_targets_to_wait else 0
+			total_count = len(existing_targets)
 			self.logger.warning(
-				f'[SessionManager] Initialization timeout after 2.0s: {ready_count}/{len(target_ids_to_wait_for)} sessions ready'
+				f'[SessionManager] Initialization timeout after 2.0s: {total_count - remaining_count}/{total_count} sessions ready'
 			)
 		finally:
-			check_task.cancel()
-			try:
-				await check_task
-			except asyncio.CancelledError:
-				pass
+			# Cleanup tracking state
+			self._init_targets_to_wait = None
+			self._init_complete_event = None
 
 	async def _enable_page_monitoring(self, cdp_session: 'CDPSession') -> None:
 		"""Enable lifecycle events and network monitoring for a page target.
