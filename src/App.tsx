@@ -45,7 +45,7 @@ export default function App() {
     try {
       await fetch('http://localhost:8000/stop-agent', { method: 'POST' });
     } catch (e) {
-      addLog('ERROR', 'Falha ao enviar sinal de stop.');
+      addLog('ERROR', 'Falha ao enviar signal de stop.');
     }
   };
 
@@ -78,7 +78,7 @@ export default function App() {
       setPuterLogs(prev => [...prev, aiLog]);
       addLog('INFO', '[PUTER] Resposta recebida.');
     } catch (error) {
-      addLog('ERROR', `[PUTER] ${error instanceof Error ? error.message : 'Erro na conexão'}`);
+      addLog('ERROR', `[PUTER] ${error instanceof Error ? error.message : 'Error na conexão'}`);
     } finally {
       setAgentState('IDLE');
       setReasoning(null);
@@ -155,7 +155,7 @@ export default function App() {
         }
       }
     } catch (error) {
-      addLog('ERROR', `Erro: ${error instanceof Error ? error.message : 'Desconhecido'}`);
+      addLog('ERROR', `Error: ${error instanceof Error ? error.message : 'Desconhecido'}`);
       setAgentState('ERROR');
     } finally {
       setTimeout(() => {

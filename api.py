@@ -85,7 +85,7 @@ async def open_browser():
 @app.post('/run-agent')
 async def run_agent(request: CommandRequest):
 	global current_agent_task
-	print(f'\n--- [AGENT] Recebido comando: {request.command} (Modelo: {request.model}) ---')
+	print(f'\n--- [AGENT] Recebido commando: {request.command} (Modelo: {request.model}) ---')
 
 	start_time = time.time()
 	loop = asyncio.get_running_loop()

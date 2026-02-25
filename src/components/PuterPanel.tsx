@@ -37,7 +37,7 @@ export function PuterPanel({ onPuterAsk, isThinking, puterLogs }: PuterPanelProp
             <div className="p-4 border-b border-neural-border/30 flex items-center justify-between bg-black/40">
                 <div className="flex items-center gap-2">
                     <Brain className="w-5 h-5 text-neural-accent" />
-                    <h2 className="font-semibold text-neural-text uppercase tracking-wider text-xs">Cérebro Auxiliar (Puter)</h2>
+                    <h2 className="font-semibold text-neural-text uppercase tracking-wider text-xs">Cérebro Auxiliary (Puter)</h2>
                 </div>
                 <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${isThinking ? 'bg-neural-accent animate-ping' : 'bg-green-500'}`}></span>
@@ -97,7 +97,7 @@ export function PuterPanel({ onPuterAsk, isThinking, puterLogs }: PuterPanelProp
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         disabled={isThinking}
-                        placeholder="Comando Cerebral..."
+                        placeholder="Commando Cerebral..."
                         className="w-full bg-black/40 border border-neural-border/50 rounded-lg py-3 pl-4 pr-12 text-xs text-white focus:outline-none focus:border-neural-accent transition-all placeholder:text-neural-muted/50"
                     />
                     <button
