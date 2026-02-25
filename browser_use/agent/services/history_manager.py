@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from browser_use.agent.views import AgentHistory, AgentHistoryList
-from browser_use.browser.views import BrowserStateHistory
 
 if TYPE_CHECKING:
-	from browser_use.agent.views import ActionResult, AgentOutput, StepMetadata
-	from browser_use.browser.views import BrowserStateSummary
+	from browser_use.agent.views import AgentOutput
 
 logger = logging.getLogger(__name__)
 

@@ -402,7 +402,8 @@ def test_is_menu_opener_step_detects_aria_haspopup():
 		metadata=StepMetadata(step_start_time=0, step_end_time=1, step_number=1, step_interval=0.1),
 	)
 
-	assert agent._is_menu_opener_step(history_item) is True
+	assert agent.action_executor.is_menu_opener_step(history_item) is True
+	assert agent.action_executor.is_menu_opener_step(history_item) is True
 
 
 def test_is_menu_opener_step_detects_guidewire_toggle():
@@ -486,7 +487,7 @@ def test_is_menu_opener_step_returns_false_for_regular_element():
 		metadata=StepMetadata(step_start_time=0, step_end_time=1, step_number=1, step_interval=0.1),
 	)
 
-	assert agent._is_menu_opener_step(history_item) is False
+	assert agent.action_executor.is_menu_opener_step(history_item) is False
 
 
 def test_is_menu_item_element_detects_role_menuitem():
@@ -509,7 +510,8 @@ def test_is_menu_item_element_detects_role_menuitem():
 		ax_name='New Contact',
 	)
 
-	assert agent._is_menu_item_element(menu_item) is True
+	assert agent.action_executor.is_menu_item_element(menu_item) is True
+	assert agent.action_executor.is_menu_item_element(menu_item) is True
 
 
 def test_is_menu_item_element_detects_guidewire_class():
@@ -555,4 +557,4 @@ def test_is_menu_item_element_returns_false_for_regular_element():
 		ax_name='Submit',
 	)
 
-	assert agent._is_menu_item_element(regular_element) is False
+	assert agent.action_executor.is_menu_item_element(regular_element) is False

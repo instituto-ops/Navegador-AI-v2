@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
-import re
 import time
 from typing import TYPE_CHECKING, Any, Callable
 
-from browser_use.agent.views import ActionResult, AgentHistory, StepMetadata
+from browser_use.agent.views import ActionResult, AgentHistory
 from browser_use.dom.views import DOMInteractedElement, MatchLevel
 from browser_use.llm.base import BaseChatModel
 from browser_use.llm.messages import SystemMessage, UserMessage
@@ -210,6 +208,7 @@ class AgentActionExecutor:
 				screenshot = await self.browser_session.take_screenshot(full_page=False)
 				if screenshot:
 					import base64
+
 					screenshot_b64 = base64.b64encode(screenshot).decode('utf-8')
 			except Exception as e:
 				self.logger.warning(f'Failed to capture screenshot for ai_step: {e}')
@@ -219,7 +218,7 @@ class AgentActionExecutor:
 		final_filtered_length = content_stats['final_filtered_chars']
 		chars_filtered = content_stats['filtered_chars_removed']
 
-		stats_summary = f"Content processed: {original_html_length:,} HTML chars → {initial_markdown_length:,} initial markdown → {final_filtered_length:,} filtered markdown"
+		stats_summary = f'Content processed: {original_html_length:,} HTML chars → {initial_markdown_length:,} initial markdown → {final_filtered_length:,} filtered markdown'
 		if chars_filtered > 0:
 			stats_summary += f' (filtered {chars_filtered:,} chars of noise)'
 
@@ -568,7 +567,9 @@ class AgentActionExecutor:
 
 			if action_name == 'extract':
 				if pending_actions:
-					batch_results = await self.execute_actions(pending_actions, current_step_number=history_item.metadata.step_number if history_item.metadata else 0)
+					batch_results = await self.execute_actions(
+						pending_actions, current_step_number=history_item.metadata.step_number if history_item.metadata else 0
+					)
 					results.extend(batch_results)
 					pending_actions = []
 
@@ -626,7 +627,9 @@ class AgentActionExecutor:
 				pending_actions.append(updated_action)
 
 		if pending_actions:
-			batch_results = await self.execute_actions(pending_actions, current_step_number=history_item.metadata.step_number if history_item.metadata else 0)
+			batch_results = await self.execute_actions(
+				pending_actions, current_step_number=history_item.metadata.step_number if history_item.metadata else 0
+			)
 			results.extend(batch_results)
 
 		return results

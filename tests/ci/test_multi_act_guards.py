@@ -179,7 +179,7 @@ class TestStaticGuard:
 		mock_llm = create_mock_llm()
 		agent = Agent(task='test', llm=mock_llm, browser_session=browser_session, tools=tools)
 
-		results = await agent.multi_act(actions)
+		results = await agent.action_executor.execute_actions(actions, 0)
 
 		# Should have executed exactly 2 actions (scroll + navigate), third skipped
 		assert len(results) == 2, f'Expected 2 results but got {len(results)}: {results}'
@@ -205,7 +205,7 @@ class TestStaticGuard:
 		mock_llm = create_mock_llm()
 		agent = Agent(task='test', llm=mock_llm, browser_session=browser_session, tools=tools)
 
-		results = await agent.multi_act(actions)
+		results = await agent.action_executor.execute_actions(actions, 0)
 
 		# go_back should terminate the sequence — only 1 result
 		assert len(results) == 1, f'Expected 1 result but got {len(results)}: {results}'
@@ -248,7 +248,7 @@ class TestRuntimeGuard:
 		mock_llm = create_mock_llm()
 		agent = Agent(task='test', llm=mock_llm, browser_session=browser_session, tools=tools)
 
-		results = await agent.multi_act(actions)
+		results = await agent.action_executor.execute_actions(actions, 0)
 
 		# Click navigated to page_b — runtime guard should stop at 1
 		assert len(results) == 1, f'Expected 1 result but got {len(results)}: {results}'
@@ -281,7 +281,7 @@ class TestSafeChain:
 		mock_llm = create_mock_llm()
 		agent = Agent(task='test', llm=mock_llm, browser_session=browser_session, tools=tools)
 
-		results = await agent.multi_act(actions)
+		results = await agent.action_executor.execute_actions(actions, 0)
 
 		# All 3 scrolls should execute
 		assert len(results) == 3, f'Expected 3 results but got {len(results)}: {results}'

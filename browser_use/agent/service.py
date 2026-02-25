@@ -44,6 +44,8 @@ from browser_use.agent.message_manager.service import (
 	MessageManager,
 )
 from browser_use.agent.prompts import SystemPrompt
+from browser_use.agent.services.action_executor import AgentActionExecutor
+from browser_use.agent.services.history_manager import AgentHistoryManager
 from browser_use.agent.views import (
 	ActionResult,
 	AgentError,
@@ -61,13 +63,10 @@ from browser_use.agent.views import (
 	PlanItem,
 	StepMetadata,
 )
-from browser_use.agent.services.action_executor import AgentActionExecutor
-from browser_use.agent.services.history_manager import AgentHistoryManager
 from browser_use.browser.events import _get_timeout
 from browser_use.browser.session import DEFAULT_BROWSER_PROFILE
 from browser_use.browser.views import BrowserStateSummary
 from browser_use.config import CONFIG
-from browser_use.dom.views import DOMInteractedElement, MatchLevel
 from browser_use.filesystem.file_system import FileSystem
 from browser_use.observability import observe, observe_debug
 from browser_use.telemetry.service import ProductTelemetry
