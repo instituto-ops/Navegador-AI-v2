@@ -48,12 +48,19 @@ class SemanticSummarizer:
         Be concise and direct.
         """
 
-		results_text = '\n'.join(
-			[
-				f'- Step {i + 1}: {step.get("description", "")} -> {step.get("outcome", "Success")}'
-				for i, step in enumerate(results)
-			]
-		)
+		results_text_list = []
+		for i, step in enumerate(results):
+			if isinstance(step, dict):
+				desc = step.get('description', '')
+				if not desc and isinstance(step.get('step'), dict):
+					desc = step['step'].get('description', '')
+
+				outcome = step.get('outcome', 'Success')
+				results_text_list.append(f'- Step {i + 1}: {desc} -> {outcome}')
+			else:
+				results_text_list.append(f'- Step {i + 1}: {str(step)}')
+
+		results_text = '\n'.join(results_text_list)
 
 		messages = [
 			SystemMessage(content=system_prompt),
