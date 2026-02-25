@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import time
+import traceback
 from typing import Any, cast
 
 import aiofiles
@@ -14,7 +15,6 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 # browser-use imports
-import sys
 import browser_use
 print(f"[DEBUG] browser_use path: {browser_use.__file__}")
 from browser_use import Browser
@@ -60,7 +60,6 @@ async def health():
 
 async def get_or_create_browser():
 	global shared_browser
-	import traceback
 	async with shared_browser_lock:
 		if shared_browser is None:
 			try:
@@ -182,7 +181,8 @@ async def run_agent(request: CommandRequest):
 
 				# Use astream instead of run directly on orchestrator because orchestrator.run is an async generator
 				async for event in orchestrator.run(request.command):
-					elapsed = float(round(time.time() - start_time, 1))
+					now = time.time()
+					elapsed = float(round(now - start_time, 1))
 
 					if 'planner' in event:
 						plan_data = event['planner'].get('plan', [])
@@ -218,13 +218,17 @@ async def run_agent(request: CommandRequest):
 							except Exception:
 								pass
 
+							res_val = res.get('result')
+							res_str = str(res_val) if res_val is not None else ''
+							memory_snippet = res_str[:100]
+
 							await queue.put(
 								{
 									'type': 'step',
 									'step': step_info.get('description', 'Action'),
 									'thought': f'Executed: {step_info.get("action_type")} - {outcome}',
 									'goal': step_info.get('description'),
-									'memory': f'Result: {str(res.get("result"))[:100]}',
+									'memory': f'Result: {memory_snippet}',
 									'url': '...',
 									'elapsed': elapsed,
 									'screenshot': screenshot_b64,
