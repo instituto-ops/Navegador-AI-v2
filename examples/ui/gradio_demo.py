@@ -2,7 +2,6 @@
 import asyncio
 import os
 import sys
-from dataclasses import dataclass
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
@@ -12,47 +11,48 @@ load_dotenv()
 
 # Third-party imports
 import gradio as gr  # type: ignore
-from rich.console import Console
-from rich.panel import Panel
-from rich.text import Text
 
 # Local module imports
 from browser_use import Agent, ChatOpenAI
+from browser_use.agent.views import AgentHistoryList
 
 
-@dataclass
-class ActionResult:
-	is_done: bool
-	extracted_content: str | None
-	error: str | None
-	include_in_memory: bool
+def parse_agent_result(history: AgentHistoryList) -> str:
+	summary = []
 
+	# Check if the task was marked as successful
+	is_success = history.is_successful()
+	final_result = history.final_result()
+	errors = history.errors()
+	model_actions = history.model_actions()
 
-@dataclass
-class AgentHistoryList:
-	all_results: list[ActionResult]
-	all_model_outputs: list[dict]
+	# Filter out None errors
+	real_errors = [e for e in errors if e]
 
+	if is_success:
+		summary.append('✅ Task Completed Successfully')
+		if final_result:
+			summary.append(f'Result: {final_result}')
+		else:
+			summary.append('No specific result content returned.')
+	elif is_success is False:
+		summary.append('❌ Task Failed')
+		if final_result:
+			summary.append(f'Failure Reason: {final_result}')
+	else:
+		summary.append('⚠️ Task Incomplete')
+		if final_result:
+			summary.append(f'Last Result: {final_result}')
 
-def parse_agent_history(history_str: str) -> None:
-	console = Console()
+	if real_errors:
+		summary.append('\nErrors encountered:')
+		for i, error in enumerate(real_errors[-3:], 1):
+			summary.append(f'{i}. {error}')
 
-	# Split the content into sections based on ActionResult entries
-	sections = history_str.split('ActionResult(')
+	if model_actions:
+		summary.append(f'\nSteps executed: {len(model_actions)}')
 
-	for i, section in enumerate(sections[1:], 1):  # Skip first empty section
-		# Extract relevant information
-		content = ''
-		if 'extracted_content=' in section:
-			content = section.split('extracted_content=')[1].split(',')[0].strip("'")
-
-		if content:
-			header = Text(f'Step {i}', style='bold blue')
-			panel = Panel(content, title=header, border_style='blue')
-			console.print(panel)
-			console.print()
-
-	return None
+	return '\n'.join(summary)
 
 
 async def run_browser_task(
@@ -72,8 +72,7 @@ async def run_browser_task(
 			llm=ChatOpenAI(model='gpt-4.1-mini'),
 		)
 		result = await agent.run()
-		#  TODO: The result could be parsed better
-		return str(result)
+		return parse_agent_result(result)
 	except Exception as e:
 		return f'Error: {str(e)}'
 
