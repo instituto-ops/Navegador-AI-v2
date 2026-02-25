@@ -19,7 +19,6 @@
 #   - This script runs tools directly from .venv to avoid 'uv run' permission errors.
 
 set -o pipefail
-IFS=$'\n'
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "$SCRIPT_DIR/.." || exit 1
@@ -100,11 +99,9 @@ wait_for_job() {
 if [ $STAGED_MODE -eq 1 ]; then
     # Get staged Python files (files being committed)
     FILE_ARRAY=()
-    while IFS= read -r file; do
+    while IFS=$'\n' read -r file; do
         [ -n "$file" ] && FILE_ARRAY+=("$file")
-    done <<EOF
-$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null | grep '\.py$')
-EOF
+    done < <(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null | grep '\.py$')
 
     if [ ${#FILE_ARRAY[@]} -eq 0 ]; then
         echo "[*] Staged mode: No Python files staged for commit"
@@ -115,11 +112,9 @@ EOF
 elif [ $QUICK_MODE -eq 1 ]; then
     # Get all changed Python files (staged and unstaged)
     FILE_ARRAY=()
-    while IFS= read -r file; do
+    while IFS=$'\n' read -r file; do
         [ -n "$file" ] && FILE_ARRAY+=("$file")
-    done <<EOF
-$(git diff --name-only --diff-filter=ACMR HEAD 2>/dev/null | grep '\.py$')
-EOF
+    done < <(git diff --name-only --diff-filter=ACMR HEAD 2>/dev/null | grep '\.py$')
 
     if [ ${#FILE_ARRAY[@]} -eq 0 ]; then
         echo "[*] Quick mode: No Python files changed"

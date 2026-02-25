@@ -5,6 +5,10 @@ import { ThoughtBox, LogEntry } from './components/ThoughtBox';
 import { Dashboard } from './components/Dashboard';
 import { ChatInput } from './components/ChatInput';
 import { PuterPanel } from './components/PuterPanel';
+<<<<<<< HEAD
+=======
+import { BrowserPreview } from './components/BrowserPreview';
+>>>>>>> origin/feature/neurostrategy-stealth-upgrade-6077733991619875167
 import { ReasoningBar, ReasoningState } from './components/ReasoningBar';
 import { LogPanel } from './components/LogPanel';
 import { ReportsPanel } from './components/ReportsPanel';
@@ -16,6 +20,10 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState<string>('auto');
   const [activeLLM, setActiveLLM] = useState<string>('Aguardando...');
   const [currentUrl, setCurrentUrl] = useState<string>('about:blank');
+<<<<<<< HEAD
+=======
+  const [currentScreenshot, setCurrentScreenshot] = useState<string | null>(null);
+>>>>>>> origin/feature/neurostrategy-stealth-upgrade-6077733991619875167
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [puterLogs, setPuterLogs] = useState<any[]>([]);
   const [reasoning, setReasoning] = useState<ReasoningState | null>(null);
@@ -133,6 +141,10 @@ export default function App() {
                 isWaiting: false
               });
               if (data.url) setCurrentUrl(data.url);
+<<<<<<< HEAD
+=======
+              if (data.screenshot) setCurrentScreenshot(data.screenshot);
+>>>>>>> origin/feature/neurostrategy-stealth-upgrade-6077733991619875167
               if (data.thought) {
                 addLog('LLM', `[PASSO ${data.step} | ${data.elapsed}s] ${data.thought}`);
               }
@@ -203,7 +215,15 @@ export default function App() {
               <ChatInput onSend={executeMacro} disabled={agentState !== 'IDLE'} />
             </div>
             <div className="flex-1 flex flex-col min-w-[300px]">
+<<<<<<< HEAD
               <PuterPanel onPuterAsk={askPuter} isThinking={agentState === 'THINKING'} puterLogs={puterLogs} />
+=======
+               <BrowserPreview
+                  currentUrl={currentUrl}
+                  agentState={agentState}
+                  screenshot={currentScreenshot}
+               />
+>>>>>>> origin/feature/neurostrategy-stealth-upgrade-6077733991619875167
             </div>
           </div>
         );

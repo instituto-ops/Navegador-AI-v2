@@ -846,19 +846,19 @@ async def test_is_redundant_retry_step_detection():
 
 	try:
 		# Test 1: Same element, same action, previous succeeded -> redundant
-		assert agent._is_redundant_retry_step(retry_click_step, click_step, True) is True
+		assert agent.action_executor.is_redundant_retry_step(retry_click_step, click_step, True) is True
 
 		# Test 2: Same element, same action, previous FAILED -> NOT redundant
-		assert agent._is_redundant_retry_step(retry_click_step, click_step, False) is False
+		assert agent.action_executor.is_redundant_retry_step(retry_click_step, click_step, False) is False
 
 		# Test 3: Same element, different action type -> NOT redundant
-		assert agent._is_redundant_retry_step(input_step, click_step, True) is False
+		assert agent.action_executor.is_redundant_retry_step(input_step, click_step, True) is False
 
 		# Test 4: Different element, same action type -> NOT redundant
-		assert agent._is_redundant_retry_step(different_element_step, click_step, True) is False
+		assert agent.action_executor.is_redundant_retry_step(different_element_step, click_step, True) is False
 
 		# Test 5: No previous step -> NOT redundant
-		assert agent._is_redundant_retry_step(click_step, None, True) is False
+		assert agent.action_executor.is_redundant_retry_step(click_step, None, True) is False
 
 	finally:
 		await agent.close()
@@ -984,22 +984,22 @@ async def test_count_expected_elements_from_history():
 
 	try:
 		# Test 1: Action index 5 -> needs 6 elements (index + 1)
-		assert agent._count_expected_elements_from_history(step_low_index) == 6
+		assert agent.action_executor.count_expected_elements_from_history(step_low_index) == 6
 
 		# Test 2: Action index 25 -> needs 26 elements
-		assert agent._count_expected_elements_from_history(step_high_index) == 26
+		assert agent.action_executor.count_expected_elements_from_history(step_high_index) == 26
 
 		# Test 3: Action index 100 -> capped at 50
-		assert agent._count_expected_elements_from_history(step_very_high_index) == 50
+		assert agent.action_executor.count_expected_elements_from_history(step_very_high_index) == 50
 
 		# Test 4: Navigate has no index -> returns 0
-		assert agent._count_expected_elements_from_history(step_no_index) == 0
+		assert agent.action_executor.count_expected_elements_from_history(step_no_index) == 0
 
 		# Test 5: Multiple actions -> uses max index (10) + 1 = 11
-		assert agent._count_expected_elements_from_history(step_multiple_actions) == 11
+		assert agent.action_executor.count_expected_elements_from_history(step_multiple_actions) == 11
 
 		# Test 6: Action index 0 (edge case) -> needs 1 element (0 + 1)
-		assert agent._count_expected_elements_from_history(step_index_zero) == 1
+		assert agent.action_executor.count_expected_elements_from_history(step_index_zero) == 1
 
 	finally:
 		await agent.close()
@@ -1036,18 +1036,18 @@ async def test_wait_for_minimum_elements(httpserver):
 		await asyncio.sleep(1.0)
 
 		# Test 1: Wait for 1 element (should succeed quickly)
-		state = await agent._wait_for_minimum_elements(min_elements=1, timeout=5.0, poll_interval=0.5)
+		state = await agent.action_executor.wait_for_minimum_elements(min_elements=1, timeout=5.0, poll_interval=0.5)
 		assert state is not None
 		assert state.dom_state.selector_map is not None
 		assert len(state.dom_state.selector_map) >= 1
 
 		# Test 2: Wait for reasonable number of elements (should succeed)
-		state = await agent._wait_for_minimum_elements(min_elements=2, timeout=5.0, poll_interval=0.5)
+		state = await agent.action_executor.wait_for_minimum_elements(min_elements=2, timeout=5.0, poll_interval=0.5)
 		assert state is not None
 		assert len(state.dom_state.selector_map) >= 2
 
 		# Test 3: Wait for too many elements (should timeout but still return state)
-		state = await agent._wait_for_minimum_elements(min_elements=100, timeout=2.0, poll_interval=0.5)
+		state = await agent.action_executor.wait_for_minimum_elements(min_elements=100, timeout=2.0, poll_interval=0.5)
 		assert state is not None  # Should still return a state even on timeout
 
 	finally:
