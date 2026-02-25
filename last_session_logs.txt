@@ -1,0 +1,3 @@
+[02:48:10] SYSTEM: [NEURO] Iniciando tarefa: "Pesquise o preço do iPhone 15 no Mercado Livre e compare com a Amazon"
+[02:48:12] INFO: Tentativa 1: Usando Groq (Llama 3.3)...
+[02:49:07] SYSTEM: Logs copiados para a área de transferência!
