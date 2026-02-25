@@ -1,16 +1,17 @@
+import asyncio
+import json
+import logging
+import os
+import time
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import asyncio
-import time
-import logging
-import json
-import os
-from dotenv import load_dotenv
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 # browser-use imports
-from browser_use import Agent, Browser, ChatGroq, ChatMistral, ChatOpenAI, BrowserProfile
+from browser_use import Agent, Browser, BrowserProfile, ChatGroq, ChatOpenAI
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -18,9 +19,12 @@ load_dotenv()
 app = FastAPI()
 
 # Configurar CORS
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
