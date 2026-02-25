@@ -18,6 +18,7 @@ from browser_use.browser.events import (
 	StorageStateLoadedEvent,
 	StorageStateSavedEvent,
 )
+from browser_use.browser.types import StorageState
 from browser_use.browser.watchdog_base import BaseWatchdog
 from browser_use.utils import create_task_with_error_handling
 
@@ -196,7 +197,7 @@ class StorageStateWatchdog(BaseWatchdog):
 				if json_path.exists():
 					try:
 						existing_state = json.loads(json_path.read_text())
-						merged_state = self._merge_storage_states(existing_state, dict(storage_state))
+						merged_state = self._merge_storage_states(existing_state, storage_state)  # type: ignore
 					except Exception as e:
 						self.logger.error(f'[StorageStateWatchdog] Failed to merge with existing state: {e}')
 
@@ -286,9 +287,9 @@ class StorageStateWatchdog(BaseWatchdog):
 			self.logger.error(f'[StorageStateWatchdog] Failed to load storage state: {e}')
 
 	@staticmethod
-	def _merge_storage_states(existing: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
+	def _merge_storage_states(existing: StorageState, new: StorageState) -> StorageState:
 		"""Merge two storage states, with new values taking precedence."""
-		merged = existing.copy()
+		merged = existing.copy()  # type: ignore
 
 		# Merge cookies
 		existing_cookies = {(c['name'], c['domain'], c['path']): c for c in existing.get('cookies', [])}

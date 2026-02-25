@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from pydantic import AfterValidator, AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from browser_use.browser.cloud.views import CloudBrowserParams
+from browser_use.browser.types import StorageState
 from browser_use.config import CONFIG
 from browser_use.utils import _log_pretty_path, logger
 
@@ -472,8 +473,7 @@ class BrowserNewContextArgs(BrowserContextArgs):
 	model_config = ConfigDict(extra='ignore', validate_assignment=False, revalidate_instances='always', populate_by_name=True)
 
 	# storage_state is not supported in launch_persistent_context()
-	storage_state: str | Path | dict[str, Any] | None = None
-	# TODO: use StorageState type instead of dict[str, Any]
+	storage_state: str | Path | StorageState | None = None
 
 	# to apply this to existing contexts (incl cookies, localStorage, IndexedDB), see:
 	# - https://github.com/microsoft/playwright/pull/34591/files
