@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from browser_use.agent.views import ActionResult, AgentHistory
 from browser_use.dom.views import DOMInteractedElement, MatchLevel
