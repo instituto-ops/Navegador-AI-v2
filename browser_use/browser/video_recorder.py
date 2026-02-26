@@ -50,7 +50,7 @@ class VideoRecorderService:
 		self.output_path = output_path
 		self.size = size
 		self.framerate = framerate
-		self._writer: Optional['Format.Writer'] = None
+		self._writer: Format.Writer | None = None
 		self._is_active = False
 		self.padded_size = _get_padded_size(self.size)
 

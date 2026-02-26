@@ -2,7 +2,7 @@ from typing import Generic, TypeVar, Union
 
 from pydantic import BaseModel
 
-T = TypeVar('T', bound=Union[BaseModel, str])
+T = TypeVar('T', bound=BaseModel | str)
 
 
 class ChatInvokeUsage(BaseModel):

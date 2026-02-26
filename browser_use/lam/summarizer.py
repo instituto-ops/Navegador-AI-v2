@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from browser_use.llm import ChatGroq, ChatOllama, ChatOpenAI
 from browser_use.llm.messages import SystemMessage, UserMessage
@@ -33,7 +33,7 @@ class SemanticSummarizer:
 
 		return ChatOpenAI(model=model_name)
 
-	async def summarize_results(self, results: List[Dict[str, Any]], user_query: str) -> str:
+	async def summarize_results(self, results: list[dict[str, Any]], user_query: str) -> str:
 		"""
 		Summarizes the execution results in the context of the user query.
 		"""

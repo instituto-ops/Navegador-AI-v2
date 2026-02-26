@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any
 
 from browser_use.llm import ChatGroq, ChatOllama, ChatOpenAI
 from browser_use.llm.messages import SystemMessage, UserMessage
@@ -40,7 +40,7 @@ class CognitivePlanner:
 		# Normal OpenAI or other providers using OpenAI protocol
 		return ChatOpenAI(model=model_name, temperature=temp)
 
-	async def plan_task(self, user_request: str) -> List[Dict[str, Any]]:
+	async def plan_task(self, user_request: str) -> list[dict[str, Any]]:
 		"""
 		Generates a plan (list of steps) for the given user request.
 		"""

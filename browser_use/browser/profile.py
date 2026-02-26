@@ -2,7 +2,7 @@ import os
 import sys
 import tempfile
 from collections.abc import Iterable
-from enum import Enum
+from enum import Enum, StrEnum
 from functools import cache
 from pathlib import Path
 from typing import Annotated, Any, Literal, Self
@@ -266,18 +266,18 @@ def validate_cli_arg(arg: str) -> str:
 # ===== Enum definitions =====
 
 
-class RecordHarContent(str, Enum):
+class RecordHarContent(StrEnum):
 	OMIT = 'omit'
 	EMBED = 'embed'
 	ATTACH = 'attach'
 
 
-class RecordHarMode(str, Enum):
+class RecordHarMode(StrEnum):
 	FULL = 'full'
 	MINIMAL = 'minimal'
 
 
-class BrowserChannel(str, Enum):
+class BrowserChannel(StrEnum):
 	CHROMIUM = 'chromium'
 	CHROME = 'chrome'
 	CHROME_BETA = 'chrome-beta'

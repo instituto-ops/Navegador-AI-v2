@@ -34,10 +34,10 @@ class SessionManager:
 		self.logger = browser_session.logger
 
 		# All targets (entities: pages, iframes, workers)
-		self._targets: dict[TargetID, 'Target'] = {}
+		self._targets: dict[TargetID, Target] = {}
 
 		# All sessions (communication channels)
-		self._sessions: dict[SessionID, 'CDPSession'] = {}
+		self._sessions: dict[SessionID, CDPSession] = {}
 
 		# Mapping: target -> sessions attached to it
 		self._target_sessions: dict[TargetID, set[SessionID]] = {}

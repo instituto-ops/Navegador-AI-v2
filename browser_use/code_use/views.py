@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from enum import Enum
+from enum import Enum, StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -13,14 +13,14 @@ from uuid_extensions import uuid7str
 from browser_use.tokens.views import UsageSummary
 
 
-class CellType(str, Enum):
+class CellType(StrEnum):
 	"""Type of notebook cell."""
 
 	CODE = 'code'
 	MARKDOWN = 'markdown'
 
 
-class ExecutionStatus(str, Enum):
+class ExecutionStatus(StrEnum):
 	"""Execution status of a cell."""
 
 	PENDING = 'pending'
