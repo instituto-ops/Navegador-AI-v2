@@ -30,6 +30,9 @@ class CommandRequest(BaseModel):
     command: str
     model: str = "auto"
 
+class LogRequest(BaseModel):
+    logs: str
+
 # --- PERSISTÊNCIA GLOBAL ---
 current_agent_task = None
 shared_browser = None
@@ -231,12 +234,25 @@ class SSELogHandler(logging.Handler):
             pass
 
 @app.post("/save-logs")
-async def save_logs(request: dict):
+async def save_logs(request: LogRequest):
     try:
-        content = request.get("logs", "")
-        with open("last_session_logs.txt", "w", encoding="utf-8") as f:
+        content = request.logs
+        # Limit log size to 1MB to prevent disk exhaustion
+        if len(content) > 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Log content too large")
+
+        logs_dir = "logs"
+        if not os.path.exists(logs_dir):
+            os.makedirs(logs_dir)
+
+        # Use a safe fixed filename in the logs directory
+        safe_path = os.path.join(logs_dir, "last_session_logs.txt")
+
+        with open(safe_path, "w", encoding="utf-8") as f:
             f.write(content)
         return {"status": "success"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -244,7 +260,8 @@ async def save_logs(request: dict):
 async def list_reports():
     try:
         reports_dir = "reports"
-        if not os.path.exists(reports_dir): os.makedirs(reports_dir)
+        if not os.path.exists(reports_dir):
+            os.makedirs(reports_dir)
         return {"reports": os.listdir(reports_dir)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -252,10 +269,28 @@ async def list_reports():
 @app.get("/reports/{filename}")
 async def get_report(filename: str):
     try:
-        path = os.path.join("reports", filename)
+        # Prevent path traversal
+        if ".." in filename or filename.startswith("/") or filename.startswith("\\"):
+            raise HTTPException(status_code=400, detail="Invalid filename")
+
+        reports_dir = os.path.abspath("reports")
+        if not os.path.exists(reports_dir):
+            os.makedirs(reports_dir)
+
+        path = os.path.abspath(os.path.join(reports_dir, filename))
+
+        # Ensure the resolved path is still within the reports directory
+        if os.path.commonpath([reports_dir, path]) != reports_dir:
+            raise HTTPException(status_code=400, detail="Invalid path")
+
+        if not os.path.exists(path):
+            raise HTTPException(status_code=404, detail="Report not found")
+
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
         return {"content": content}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
