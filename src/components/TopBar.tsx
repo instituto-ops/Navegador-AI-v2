@@ -2,7 +2,7 @@ import React from 'react';
 import { Activity, Brain, MousePointer2, AlertCircle, Zap, Cpu, Globe, HardDrive, Square, Eye, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export type AgentState = 'IDLE' | 'THINKING' | 'ACTING' | 'ERROR';
+export type AgentState = 'IDLE' | 'THINKING' | 'ACTING' | 'ERROR' | 'OBSERVING';
 
 interface TopBarProps {
   agentState: AgentState;
@@ -20,6 +20,7 @@ export function TopBar({ agentState, activeLLM, currentUrl, selectedModel, onMod
     THINKING: { label: 'Processando', color: 'text-neural-accent animate-pulse', icon: Brain },
     ACTING: { label: 'Agindo', color: 'text-neural-success', icon: MousePointer2 },
     ERROR: { label: 'Falha Crítica', color: 'text-neural-error', icon: AlertCircle },
+    OBSERVING: { label: 'Observando', color: 'text-blue-400', icon: Eye },
   };
 
   const models = [

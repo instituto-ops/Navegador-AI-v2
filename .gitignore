@@ -10,3 +10,11 @@ browser_profile/
 last_session_logs.txt
 reports/
 *.txt
+__pycache__/
+*.pyc
+.venv/
+.idea/
+.vscode/
+*.egg-info/
+.ruff_cache/
+npm_output.log

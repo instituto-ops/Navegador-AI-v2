@@ -243,7 +243,7 @@ class DownloadsWatchdog(BaseWatchdog):
 			# Cache info for later completion event handling (esp. remote browsers)
 			guid = event.get('guid', '')
 			url = event.get('url', '')
-			suggested_filename = event.get('suggestedFilename', 'download')
+			suggested_filename = os.path.basename(event.get('suggestedFilename', 'download'))
 			try:
 				assert suggested_filename, 'CDP DownloadWillBegin missing suggestedFilename'
 				self._cdp_downloads_info[guid] = {
@@ -675,7 +675,7 @@ class DownloadsWatchdog(BaseWatchdog):
 
 			# Determine filename
 			if suggested_filename:
-				filename = suggested_filename
+				filename = os.path.basename(suggested_filename)
 			else:
 				# Extract from URL
 				filename = os.path.basename(url.split('?')[0])  # Remove query params
@@ -858,7 +858,7 @@ class DownloadsWatchdog(BaseWatchdog):
 		expected_path = None
 		download_result = None
 		download_url = event.get('url', '')
-		suggested_filename = event.get('suggestedFilename', 'download')
+		suggested_filename = os.path.basename(event.get('suggestedFilename', 'download'))
 		guid = event.get('guid', '')
 
 		try:
@@ -953,7 +953,7 @@ class DownloadsWatchdog(BaseWatchdog):
 			current_step = 'getting_download_info'
 			# Get download info immediately
 			url = download.url
-			suggested_filename = download.suggested_filename
+			suggested_filename = os.path.basename(download.suggested_filename)
 
 			current_step = 'determining_download_directory'
 			# Determine download directory from browser profile
