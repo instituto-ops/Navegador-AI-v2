@@ -119,39 +119,80 @@ export default function App() {
         const chunk = decoder.decode(value, { stream: true });
         const lines = chunk.split('\n');
 
+        const newLogs: LogEntry[] = [];
+        let pendingAgentState: AgentState | null = null;
+        let pendingReasoning: ReasoningState | null = null;
+        let pendingUrl: string | null = null;
+        let pendingActiveLLM: string | null = null;
+
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = JSON.parse(line.substring(6));
 
             if (data.type === 'step') {
-              setAgentState('ACTING');
-              setReasoning({
+              pendingAgentState = 'ACTING';
+              pendingReasoning = {
                 thought: data.thought,
                 goal: data.goal,
                 memory: data.memory,
                 elapsed: data.elapsed,
                 isWaiting: false
-              });
-              if (data.url) setCurrentUrl(data.url);
+              };
+              if (data.url) pendingUrl = data.url;
               if (data.thought) {
-                addLog('LLM', `[PASSO ${data.step} | ${data.elapsed}s] ${data.thought}`);
+                newLogs.push({
+                  id: Math.random().toString(36).substring(7),
+                  timestamp: new Date().toLocaleTimeString('pt-BR', { hour12: false }),
+                  level: 'LLM',
+                  message: `[PASSO ${data.step} | ${data.elapsed}s] ${data.thought}`
+                });
               }
             } else if (data.type === 'info') {
-              addLog('INFO', `[${data.elapsed || '...'}s] ${data.message}`);
+              newLogs.push({
+                id: Math.random().toString(36).substring(7),
+                timestamp: new Date().toLocaleTimeString('pt-BR', { hour12: false }),
+                level: 'INFO',
+                message: `[${data.elapsed || '...'}s] ${data.message}`
+              });
               if (data.message.includes('Usando') || data.message.includes('Conectando')) {
                 const modelMatch = data.message.match(/Usando (.*)\.\.\./) || data.message.match(/ao (.*)\.\.\./);
-                if (modelMatch) setActiveLLM(modelMatch[1]);
+                if (modelMatch) pendingActiveLLM = modelMatch[1];
               }
             } else if (data.type === 'done') {
-              setAgentState('SYNTHESIZING');
-              addLog('SYSTEM', `[TOTAL: ${data.total_time}s] ${data.message}`);
-              if (data.final_url) setCurrentUrl(data.final_url);
-              if (data.summary) addLog('INFO', `RESUMO FINAL: ${data.summary}`);
+              pendingAgentState = 'SYNTHESIZING';
+              newLogs.push({
+                id: Math.random().toString(36).substring(7),
+                timestamp: new Date().toLocaleTimeString('pt-BR', { hour12: false }),
+                level: 'SYSTEM',
+                message: `[TOTAL: ${data.total_time}s] ${data.message}`
+              });
+              if (data.final_url) pendingUrl = data.final_url;
+              if (data.summary) {
+                newLogs.push({
+                  id: Math.random().toString(36).substring(7),
+                  timestamp: new Date().toLocaleTimeString('pt-BR', { hour12: false }),
+                  level: 'INFO',
+                  message: `RESUMO FINAL: ${data.summary}`
+                });
+              }
             } else if (data.type === 'error') {
-              addLog('ERROR', data.message);
-              setAgentState('ERROR');
+              newLogs.push({
+                id: Math.random().toString(36).substring(7),
+                timestamp: new Date().toLocaleTimeString('pt-BR', { hour12: false }),
+                level: 'ERROR',
+                message: data.message
+              });
+              pendingAgentState = 'ERROR';
             }
           }
+        }
+
+        if (pendingAgentState) setAgentState(pendingAgentState);
+        if (pendingReasoning) setReasoning(pendingReasoning);
+        if (pendingUrl) setCurrentUrl(pendingUrl);
+        if (pendingActiveLLM) setActiveLLM(pendingActiveLLM);
+        if (newLogs.length > 0) {
+          setLogs(prev => [...prev, ...newLogs]);
         }
       }
     } catch (error) {
