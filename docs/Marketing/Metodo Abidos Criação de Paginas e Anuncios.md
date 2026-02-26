@@ -923,5 +923,3 @@ Eis como ele opera no Google Ads para lucrar muito pagando pouco por clique:
 ### O Veredito
 Seu irmão aplicou o que chamamos de **SEO Local Técnico + CRO (Conversion Rate Optimization)**. 
 Ele pegou um negócio de bairro físico e o transformou em uma autoridade digital da cidade. O site não é feito para o ego do dono (falar "somos os melhores"); ele é **100% focado no que o paciente digita no Google** (sintomas, nomes de massagens e dúvidas) e em matar a insegurança mostrando o ambiente e as terapeutas. É um trabalho cirúrgico.
-
-

@@ -119,7 +119,7 @@ build-backend = "hatchling.build"
 
 [tool.codespell]
 ignore-words-list = "bu,wit,dont,cant,wont,re-use,re-used,re-using,re-usable,thats,doesnt,doubleclick,finaly,finalY,Auxiliar,Comando,sinal,Erro,comando,auxiliar,erro"
-skip = "*.json"
+skip = "*.json,docs/Marketing/*.md"
 
 [tool.ruff]
 line-length = 130
