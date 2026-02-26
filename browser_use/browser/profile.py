@@ -304,34 +304,6 @@ CliArgStr = Annotated[str, AfterValidator(validate_cli_arg)]
 # ===== Base Models =====
 
 
-class StorageStateCookie(TypedDict, total=False):
-	name: str
-	value: str
-	url: str
-	domain: str
-	path: str
-	expires: float
-	httpOnly: bool
-	secure: bool
-	sameSite: Literal['Strict', 'Lax', 'None']
-
-
-class StorageStateEntry(TypedDict):
-	name: str
-	value: str
-
-
-class StorageStateOrigin(TypedDict, total=False):
-	origin: str
-	localStorage: list[StorageStateEntry]
-	sessionStorage: list[StorageStateEntry]
-
-
-class StorageState(TypedDict, total=False):
-	cookies: list[StorageStateCookie]
-	origins: list[StorageStateOrigin]
-
-
 class BrowserContextArgs(BaseModel):
 	"""
 	Base model for common browser context parameters used by
