@@ -1,5 +1,4 @@
 import json
-import os
 from typing import Any
 
 from browser_use.llm import ChatGroq, ChatOllama, ChatOpenAI
