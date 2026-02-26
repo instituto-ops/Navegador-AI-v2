@@ -122,9 +122,22 @@ class DownloadsWatchdog(BaseWatchdog):
 
 			# Capture initial files to detect new downloads reliably
 			if expanded_path.exists():
-				for f in expanded_path.iterdir():
-					if f.is_file() and not f.name.startswith('.'):
-						self._initial_downloads_snapshot.add(f.name)
+
+				def _get_initial_downloads() -> set[str]:
+					initial_downloads = set()
+					try:
+						# Run blocking directory iteration in a thread pool to avoid blocking the event loop
+						for f in expanded_path.iterdir():
+							if f.is_file() and not f.name.startswith('.'):
+								initial_downloads.add(f.name)
+					except Exception as e:
+						self.logger.warning(f'[DownloadsWatchdog] Error listing initial downloads: {e}')
+					return initial_downloads
+
+				self._initial_downloads_snapshot = await asyncio.get_running_loop().run_in_executor(
+					None, _get_initial_downloads
+				)
+
 				self.logger.debug(
 					f'[DownloadsWatchdog] Captured initial downloads: {len(self._initial_downloads_snapshot)} files'
 				)
