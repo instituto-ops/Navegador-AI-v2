@@ -9,7 +9,7 @@ from browser_use import Browser
 from browser_use.lam.executor import LogicExecutor
 from browser_use.lam.planner import CognitivePlanner
 from browser_use.lam.summarizer import SemanticSummarizer
-from browser_use.llm.messages import BaseMessage, SystemMessage, UserMessage
+from browser_use.llm.messages import BaseMessage, UserMessage
 
 
 # Define AgentState with Annotated for proper state merging/appending
@@ -113,7 +113,7 @@ class LAMOrchestrator:
 		results = cast(List[Dict[str, Any]], results_val) if results_val is not None else []
 		
 		print(f'[LAM] Summarizing {len(results)} results')
-		summary = await self.summarizer.summarize_results(user_request, results)
+		summary = await self.summarizer.summarize_results(results, user_request)
 		return {'final_output': summary}
 
 	async def run(self, command: str):

@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict, List
 
 from browser_use.llm import ChatGroq, ChatOllama, ChatOpenAI
-from browser_use.llm.messages import UserMessage, SystemMessage
+from browser_use.llm.messages import SystemMessage, UserMessage
 
 
 class CognitivePlanner:
