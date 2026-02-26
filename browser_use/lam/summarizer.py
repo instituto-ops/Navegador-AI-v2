@@ -16,19 +16,19 @@ class SemanticSummarizer:
 	def _get_llm(self, model_name: str):
 		if model_name.startswith('ollama/'):
 			return ChatOllama(model=model_name.replace('ollama/', ''))
-		
+
 		if model_name.startswith('groq/'):
 			import os
+
 			api_key = os.getenv('GROQ_API_KEY')
 			return ChatGroq(model=model_name.replace('groq/', ''), api_key=api_key)
 
 		if model_name.startswith('openrouter/'):
 			import os
+
 			api_key = os.getenv('OPENROUTER_API_KEY')
 			return ChatOpenAI(
-				model=model_name.replace('openrouter/', ''),
-				api_key=api_key,
-				base_url='https://openrouter.ai/api/v1'
+				model=model_name.replace('openrouter/', ''), api_key=api_key, base_url='https://openrouter.ai/api/v1'
 			)
 
 		return ChatOpenAI(model=model_name)
