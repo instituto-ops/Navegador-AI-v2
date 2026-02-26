@@ -154,7 +154,7 @@ async def run_agent(request: CommandRequest):
 
 				# Instantiate LAM Orchestrator
 				# Determine model based on request (mapping frontend strings to LAM prefixes)
-				model_name = 'gpt-4o' # Default
+				model_name = 'gpt-4o'  # Default
 				if request.model == 'ollama':
 					model_name = 'ollama/llama3.2'
 				elif request.model == 'smol':
@@ -168,7 +168,7 @@ async def run_agent(request: CommandRequest):
 					model_name = 'openrouter/google/gemini-2.0-flash-001'
 					await queue.put({'type': 'info', 'message': '💎 Usando Puter (Gemini 2.0 Luxury Fallback)...', 'elapsed': 0})
 				elif request.model == 'vision':
-					model_name = 'gpt-4o' # Primary vision model
+					model_name = 'gpt-4o'  # Primary vision model
 				elif request.model == 'auto':
 					# Attempt to use primary model from .env if auto is selected
 					primary = os.getenv('PRIMARY_MODEL', 'groq')
@@ -204,12 +204,15 @@ async def run_agent(request: CommandRequest):
 								# Version 0.11.13 might have different state access
 								current_page = await browser_instance.get_current_page()
 								if current_page:
-									screenshot_b64 = await current_page.screenshot(type='jpeg', quality=50, full_page=False)
+									# Fix: Page.screenshot arguments are (format, quality)
+									# type -> format, full_page is not supported by Page.screenshot
+									screenshot_b64 = await current_page.screenshot(format='jpeg', quality=50)
 									import base64
+
 									if isinstance(screenshot_b64, bytes):
 										screenshot_b64 = base64.b64encode(screenshot_b64).decode('utf-8')
 							except Exception as e:
-								print(f"[DEBUG] Screenshot failed: {e}")
+								print(f'[DEBUG] Screenshot failed: {e}')
 
 							res_val = res.get('result')
 							res_str = str(res_val) if res_val is not None else ''
@@ -235,9 +238,10 @@ async def run_agent(request: CommandRequest):
 							# ROBUST PAGE EXTRACTION
 							current_page = await browser_instance.get_current_page()
 							if current_page:
-								final_url = current_page.url
+								# Fix: Page has get_url() method, not url property
+								final_url = await current_page.get_url()
 						except Exception as e:
-							print(f"[DEBUG] Final URL extraction failed: {e}")
+							print(f'[DEBUG] Final URL extraction failed: {e}')
 
 						await queue.put(
 							{
