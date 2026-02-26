@@ -2,6 +2,7 @@ import base64
 from unittest.mock import Mock, mock_open, patch
 
 import pytest
+
 from browser_use.agent.judge import construct_judge_messages
 from browser_use.llm.messages import (
 	ContentPartImageParam,
