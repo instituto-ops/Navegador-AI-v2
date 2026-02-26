@@ -10,3 +10,8 @@ browser_profile/
 last_session_logs.txt
 reports/
 *.txt
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/

@@ -125,7 +125,7 @@ class LocalBrowserWatchdog(BaseWatchdog):
 				else:
 					# self.logger.debug('[LocalBrowserWatchdog] 🔍 Looking for local browser binary path...')
 					# Try fallback paths first (system browsers preferred)
-					browser_path = self._find_installed_browser_path()
+					browser_path = await asyncio.to_thread(self._find_installed_browser_path)
 					if not browser_path:
 						self.logger.error(
 							'[LocalBrowserWatchdog] ⚠️ No local browser binary found, installing browser using playwright subprocess...'
@@ -340,7 +340,7 @@ class LocalBrowserWatchdog(BaseWatchdog):
 		try:
 			stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=60.0)
 			self.logger.debug(f'[LocalBrowserWatchdog] 📦 Playwright install output: {stdout}')
-			browser_path = self._find_installed_browser_path()
+			browser_path = await asyncio.to_thread(self._find_installed_browser_path)
 			if browser_path:
 				return browser_path
 			self.logger.error(f'[LocalBrowserWatchdog] ❌ Playwright local browser installation error: \n{stdout}\n{stderr}')
