@@ -131,6 +131,9 @@ class ChatAnthropicBedrock(ChatAWSBedrock):
 	def name(self) -> str:
 		return str(self.model)
 
+	def supports_vision(self) -> bool:
+		return True
+
 	def _get_usage(self, response: Message) -> ChatInvokeUsage | None:
 		"""Extract usage information from the response."""
 		usage = ChatInvokeUsage(

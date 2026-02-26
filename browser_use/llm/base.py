@@ -31,6 +31,12 @@ class BaseChatModel(Protocol):
 		# for legacy support
 		return self.model
 
+	def supports_vision(self) -> bool:
+		"""
+		Check if the model supports vision.
+		"""
+		return True
+
 	@overload
 	async def ainvoke(
 		self, messages: list[BaseMessage], output_format: None = None, **kwargs: Any

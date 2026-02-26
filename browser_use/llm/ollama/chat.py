@@ -57,6 +57,10 @@ class ChatOllama(BaseChatModel):
 	def name(self) -> str:
 		return self.model
 
+	def supports_vision(self) -> bool:
+		model_lower = self.name.lower()
+		return 'deepseek' not in model_lower and 'grok-3' not in model_lower and 'grok-code' not in model_lower
+
 	@overload
 	async def ainvoke(
 		self, messages: list[BaseMessage], output_format: None = None, **kwargs: Any

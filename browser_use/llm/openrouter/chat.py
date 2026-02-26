@@ -95,6 +95,10 @@ class ChatOpenRouter(BaseChatModel):
 	def name(self) -> str:
 		return str(self.model)
 
+	def supports_vision(self) -> bool:
+		model_lower = self.name.lower()
+		return 'deepseek' not in model_lower and 'grok-3' not in model_lower and 'grok-code' not in model_lower
+
 	def _get_usage(self, response: ChatCompletion) -> ChatInvokeUsage | None:
 		"""Extract usage information from the OpenRouter response."""
 		if response.usage is None:

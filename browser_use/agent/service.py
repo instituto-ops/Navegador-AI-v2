@@ -459,17 +459,8 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 		# Verify we can connect to the model
 		self._verify_and_setup_llm()
 
-		# TODO: move this logic to the LLMs
-		# Handle users trying to use use_vision=True with DeepSeek models
-		if 'deepseek' in self.llm.model.lower():
-			self.logger.warning('⚠️ DeepSeek models do not support use_vision=True yet. Setting use_vision=False for now...')
-			self.settings.use_vision = False
-
-		# Handle users trying to use use_vision=True with XAI models that don't support it
-		# grok-3 variants and grok-code don't support vision; grok-2 and grok-4 do
-		model_lower = self.llm.model.lower()
-		if 'grok-3' in model_lower or 'grok-code' in model_lower:
-			self.logger.warning('⚠️ This XAI model does not support use_vision=True yet. Setting use_vision=False for now...')
+		if not self.llm.supports_vision():
+			self.logger.warning('⚠️ Model does not support vision. Setting use_vision=False...')
 			self.settings.use_vision = False
 
 		logger.debug(

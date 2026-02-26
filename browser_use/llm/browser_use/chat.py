@@ -102,6 +102,9 @@ class ChatBrowserUse(BaseChatModel):
 	def name(self) -> str:
 		return self.model
 
+	def supports_vision(self) -> bool:
+		return True
+
 	@overload
 	async def ainvoke(
 		self, messages: list[BaseMessage], output_format: None = None, request_type: str = 'browser_agent', **kwargs: Any

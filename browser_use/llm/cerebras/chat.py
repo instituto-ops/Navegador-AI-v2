@@ -58,6 +58,9 @@ class ChatCerebras(BaseChatModel):
 	def name(self) -> str:
 		return self.model
 
+	def supports_vision(self) -> bool:
+		return False
+
 	def _get_usage(self, response: ChatCompletion) -> ChatInvokeUsage | None:
 		if response.usage is not None:
 			usage = ChatInvokeUsage(

@@ -157,6 +157,9 @@ class ChatGoogle(BaseChatModel):
 	def name(self) -> str:
 		return str(self.model)
 
+	def supports_vision(self) -> bool:
+		return True
+
 	def _get_stop_reason(self, response: types.GenerateContentResponse) -> str | None:
 		"""Extract stop_reason from Google response."""
 		if hasattr(response, 'candidates') and response.candidates:

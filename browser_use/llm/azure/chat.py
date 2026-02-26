@@ -67,6 +67,10 @@ class ChatAzureOpenAI(ChatOpenAILike):
 	def provider(self) -> str:
 		return 'azure'
 
+	def supports_vision(self) -> bool:
+		model_lower = self.name.lower()
+		return 'deepseek' not in model_lower and 'grok-3' not in model_lower and 'grok-code' not in model_lower
+
 	def _get_client_params(self) -> dict[str, Any]:
 		_client_params: dict[str, Any] = {}
 

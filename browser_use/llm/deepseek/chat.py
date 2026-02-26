@@ -59,6 +59,9 @@ class ChatDeepSeek(BaseChatModel):
 	def name(self) -> str:
 		return self.model
 
+	def supports_vision(self) -> bool:
+		return False
+
 	@overload
 	async def ainvoke(
 		self,

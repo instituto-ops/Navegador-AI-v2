@@ -112,6 +112,9 @@ class ChatAnthropic(BaseChatModel):
 	def name(self) -> str:
 		return str(self.model)
 
+	def supports_vision(self) -> bool:
+		return True
+
 	def _get_usage(self, response: Message) -> ChatInvokeUsage | None:
 		usage = ChatInvokeUsage(
 			prompt_tokens=response.usage.input_tokens

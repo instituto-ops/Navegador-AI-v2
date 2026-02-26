@@ -51,6 +51,10 @@ class ChatMistral(BaseChatModel):
 	def name(self) -> str:
 		return str(self.model)
 
+	def supports_vision(self) -> bool:
+		model_lower = self.name.lower()
+		return 'deepseek' not in model_lower and 'grok-3' not in model_lower and 'grok-code' not in model_lower
+
 	def _get_api_key(self) -> str:
 		key = self.api_key or os.getenv('MISTRAL_API_KEY')
 		if not key:
