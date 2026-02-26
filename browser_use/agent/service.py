@@ -1712,16 +1712,6 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 
 		self.history.add_item(history_item)
 
-	def _remove_think_tags(self, text: str) -> str:
-		THINK_TAGS = re.compile(r'<think>.*?</think>', re.DOTALL)
-		STRAY_CLOSE_TAG = re.compile(r'.*?</think>', re.DOTALL)
-		# Step 1: Remove well-formed <think>...</think>
-		text = re.sub(THINK_TAGS, '', text)
-		# Step 2: If there's an unmatched closing tag </think>,
-		#         remove everything up to and including that.
-		text = re.sub(STRAY_CLOSE_TAG, '', text)
-		return text.strip()
-
 	# region - URL replacement
 	def _replace_urls_in_text(self, text: str) -> tuple[str, dict[str, str]]:
 		"""Replace URLs in a text string"""
