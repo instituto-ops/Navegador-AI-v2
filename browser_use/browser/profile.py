@@ -8,9 +8,8 @@ from pathlib import Path
 from typing import Annotated, Any, Literal, Self
 from urllib.parse import urlparse
 
-from typing_extensions import TypedDict
-
 from pydantic import AfterValidator, AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
+from typing_extensions import TypedDict
 
 from browser_use.browser.cloud.views import CloudBrowserParams
 from browser_use.browser.types import StorageState
@@ -325,11 +324,6 @@ class StorageStateOrigin(TypedDict, total=False):
 	origin: str
 	localStorage: list[StorageStateEntry]
 	sessionStorage: list[StorageStateEntry]
-
-
-class StorageState(TypedDict, total=False):
-	cookies: list[StorageStateCookie]
-	origins: list[StorageStateOrigin]
 
 
 class BrowserContextArgs(BaseModel):
