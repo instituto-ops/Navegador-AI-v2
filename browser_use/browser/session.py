@@ -1257,7 +1257,7 @@ class BrowserSession(BaseModel):
 			return []
 		return self.session_manager.get_all_page_targets()
 
-	async def close_page(self, page: 'Union[Page, str]') -> None:
+	async def close_page(self, page: 'Page | str') -> None:
 		"""Close a page by Page object or target ID."""
 		from cdp_use.cdp.target.commands import CloseTargetParameters
 

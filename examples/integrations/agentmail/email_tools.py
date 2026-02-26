@@ -11,6 +11,7 @@ from agentmail.inboxes.types.inbox import Inbox  # type: ignore
 from agentmail.inboxes.types.inbox_id import InboxId  # type: ignore
 
 from browser_use import Tools
+from datetime import UTC
 
 # Configure basic logging if not already configured
 if not logging.getLogger().handlers:
@@ -143,7 +144,7 @@ class EmailTools(Tools):
 			# Get unread emails
 			emails = await self.email_client.inboxes.messages.list(inbox_id=inbox.inbox_id, labels=['unread'])
 			# Filter unread emails by time window - use UTC timezone to match email timestamps
-			time_cutoff = datetime.now(timezone.utc) - timedelta(minutes=max_age_minutes)
+			time_cutoff = datetime.now(UTC) - timedelta(minutes=max_age_minutes)
 			logger.debug(f'Time cutoff: {time_cutoff}')
 			logger.info(f'Found {len(emails.messages)} unread emails for inbox {inbox.inbox_id}')
 			recent_unread_emails = []
@@ -157,7 +158,7 @@ class EmailTools(Tools):
 				email_timestamp = full_email.timestamp
 				if email_timestamp.tzinfo is None:
 					# If email timestamp is naive, assume UTC
-					email_timestamp = email_timestamp.replace(tzinfo=timezone.utc)
+					email_timestamp = email_timestamp.replace(tzinfo=UTC)
 
 				if email_timestamp >= time_cutoff:
 					recent_unread_emails.append(full_email)

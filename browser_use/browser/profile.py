@@ -2,18 +2,17 @@ import os
 import sys
 import tempfile
 from collections.abc import Iterable
-from enum import Enum
+from enum import Enum, StrEnum
 from functools import cache
 from pathlib import Path
 from typing import Annotated, Any, Literal, Self
 from urllib.parse import urlparse
 
+from pydantic import AfterValidator, AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing_extensions import TypedDict
 
-from pydantic import AfterValidator, AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
-
 from browser_use.browser.cloud.views import CloudBrowserParams
-from browser_use.browser.types import StorageState
+from browser_use.browser.types import StorageState as BrowserStorageState
 from browser_use.config import CONFIG
 from browser_use.utils import _log_pretty_path, logger
 
@@ -267,18 +266,18 @@ def validate_cli_arg(arg: str) -> str:
 # ===== Enum definitions =====
 
 
-class RecordHarContent(str, Enum):
+class RecordHarContent(StrEnum):
 	OMIT = 'omit'
 	EMBED = 'embed'
 	ATTACH = 'attach'
 
 
-class RecordHarMode(str, Enum):
+class RecordHarMode(StrEnum):
 	FULL = 'full'
 	MINIMAL = 'minimal'
 
 
-class BrowserChannel(str, Enum):
+class BrowserChannel(StrEnum):
 	CHROMIUM = 'chromium'
 	CHROME = 'chrome'
 	CHROME_BETA = 'chrome-beta'
@@ -330,6 +329,17 @@ class StorageStateOrigin(TypedDict, total=False):
 class StorageState(TypedDict, total=False):
 	cookies: list[StorageStateCookie]
 	origins: list[StorageStateOrigin]
+
+
+# Re-export BrowserStorageState as it's the one expected by the type checker
+# but we are defining a slightly different one locally for validation purposes?
+# Actually, the error says:
+# Type "type[browser_use.browser.types.StorageState]" is not assignable to declared type "type[browser_use.browser.profile.StorageState]"
+# It seems we have a conflict between the imported StorageState and the locally defined one.
+# We should probably alias the imported one or remove the local one if it's identical.
+# The local one has total=False, which makes fields optional.
+# The imported one in types.py has fields required (except those marked NotRequired).
+# Let's use the one from types.py for the pydantic model annotation to satisfy the checker.
 
 
 class BrowserContextArgs(BaseModel):
@@ -503,7 +513,7 @@ class BrowserNewContextArgs(BrowserContextArgs):
 	model_config = ConfigDict(extra='ignore', validate_assignment=False, revalidate_instances='always', populate_by_name=True)
 
 	# storage_state is not supported in launch_persistent_context()
-	storage_state: str | Path | StorageState | None = None
+	storage_state: str | Path | BrowserStorageState | None = None
 
 	# to apply this to existing contexts (incl cookies, localStorage, IndexedDB), see:
 	# - https://github.com/microsoft/playwright/pull/34591/files

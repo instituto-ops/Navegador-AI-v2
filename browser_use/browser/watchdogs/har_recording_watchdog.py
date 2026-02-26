@@ -27,6 +27,7 @@ from cdp_use.cdp.page.events import FrameNavigatedEvent, LifecycleEventEvent
 
 from browser_use.browser.events import BrowserConnectedEvent, BrowserStopEvent
 from browser_use.browser.watchdog_base import BaseWatchdog
+from datetime import UTC
 
 
 @dataclass
@@ -675,7 +676,7 @@ class HarRecordingWatchdog(BaseWatchdog):
 		try:
 			from datetime import datetime, timezone
 
-			return datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat().replace('+00:00', 'Z')
+			return datetime.fromtimestamp(timestamp, tz=UTC).isoformat().replace('+00:00', 'Z')
 		except Exception:
 			return ''
 
@@ -708,7 +709,7 @@ class HarRecordingWatchdog(BaseWatchdog):
 			if e.wall_time_request is not None:
 				from datetime import datetime, timezone
 
-				started = datetime.fromtimestamp(e.wall_time_request, tz=timezone.utc).isoformat().replace('+00:00', 'Z')
+				started = datetime.fromtimestamp(e.wall_time_request, tz=UTC).isoformat().replace('+00:00', 'Z')
 		except Exception:
 			started = ''
 

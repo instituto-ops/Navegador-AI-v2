@@ -1,7 +1,7 @@
 """Type-safe event models for sandbox execution SSE streaming"""
 
 import json
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any
 
 from pydantic import BaseModel
@@ -11,7 +11,7 @@ class SandboxError(Exception):
 	pass
 
 
-class SSEEventType(str, Enum):
+class SSEEventType(StrEnum):
 	"""Event types for Server-Sent Events"""
 
 	BROWSER_CREATED = 'browser_created'
