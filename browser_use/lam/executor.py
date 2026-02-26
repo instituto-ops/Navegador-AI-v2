@@ -20,7 +20,7 @@ class LogicExecutor:
 	def _get_llm(self, model_name: str) -> Any:
 		if model_name.startswith('ollama/'):
 			return ChatOllama(model=model_name.replace('ollama/', ''))
-		
+
 		if model_name.startswith('groq/'):
 			api_key = os.getenv('GROQ_API_KEY')
 			return ChatGroq(model=model_name.replace('groq/', ''), api_key=api_key)
@@ -28,9 +28,7 @@ class LogicExecutor:
 		if model_name.startswith('openrouter/'):
 			api_key = os.getenv('OPENROUTER_API_KEY')
 			return ChatOpenAI(
-				model=model_name.replace('openrouter/', ''),
-				api_key=api_key,
-				base_url='https://openrouter.ai/api/v1'
+				model=model_name.replace('openrouter/', ''), api_key=api_key, base_url='https://openrouter.ai/api/v1'
 			)
 
 		return ChatOpenAI(model=model_name)
@@ -44,13 +42,8 @@ class LogicExecutor:
 		try:
 			# Disable vision for Groq as it doesn't support image inputs (causes 400 error)
 			use_vision = not self.model_name.startswith('groq/')
-			
-			agent = Agent(
-				task=task_description, 
-				llm=cast(Any, self.llm), 
-				browser=self.browser, 
-				use_vision=use_vision
-			)
+
+			agent = Agent(task=task_description, llm=cast(Any, self.llm), browser=self.browser, use_vision=use_vision)
 
 			history = await agent.run()
 
