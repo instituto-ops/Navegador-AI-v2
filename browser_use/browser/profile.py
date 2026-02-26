@@ -326,11 +326,6 @@ class StorageStateOrigin(TypedDict, total=False):
 	sessionStorage: list[StorageStateEntry]
 
 
-class StorageState(TypedDict, total=False):
-	cookies: list[StorageStateCookie]
-	origins: list[StorageStateOrigin]
-
-
 class BrowserContextArgs(BaseModel):
 	"""
 	Base model for common browser context parameters used by
