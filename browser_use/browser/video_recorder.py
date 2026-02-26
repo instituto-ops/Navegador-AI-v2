@@ -4,6 +4,8 @@ import base64
 import io
 import logging
 import math
+import queue
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -36,6 +38,7 @@ class VideoRecorderService:
 	This service captures individual frames from the CDP screencast, decodes them,
 	and appends them to a video file using a pip-installable ffmpeg backend.
 	It automatically resizes frames to match the target video dimensions.
+	It uses a separate thread for processing frames to avoid blocking the main thread.
 	"""
 
 	def __init__(self, output_path: Path, size: ViewportSize, framerate: int):
@@ -53,6 +56,11 @@ class VideoRecorderService:
 		self._writer: Optional['Format.Writer'] = None
 		self._is_active = False
 		self.padded_size = _get_padded_size(self.size)
+
+		# Threading components
+		self._queue: queue.Queue[str] = queue.Queue()
+		self._stop_event = threading.Event()
+		self._thread = threading.Thread(target=self._process_queue, daemon=True)
 
 	def start(self) -> None:
 		"""
@@ -79,6 +87,7 @@ class VideoRecorderService:
 				macro_block_size=None,
 			)
 			self._is_active = True
+			self._thread.start()
 			logger.debug(f'Video recorder started. Output will be saved to {self.output_path}')
 		except Exception as e:
 			logger.error(f'Failed to initialize video writer: {e}')
@@ -86,13 +95,33 @@ class VideoRecorderService:
 
 	def add_frame(self, frame_data_b64: str) -> None:
 		"""
-		Decodes a base64-encoded PNG frame, resizes it, pads it to be codec-compatible,
-		and appends it to the video.
+		Adds a frame to the processing queue.
 
 		Args:
 		    frame_data_b64: A base64-encoded string of the PNG frame data.
 		"""
-		if not self._is_active or not self._writer:
+		if not self._is_active:
+			return
+
+		self._queue.put(frame_data_b64)
+
+	def _process_queue(self) -> None:
+		"""Process frames from the queue in a separate thread."""
+		while not self._stop_event.is_set() or not self._queue.empty():
+			try:
+				frame_data = self._queue.get(timeout=0.1)
+			except queue.Empty:
+				continue
+
+			self._process_frame(frame_data)
+			self._queue.task_done()
+
+	def _process_frame(self, frame_data_b64: str) -> None:
+		"""
+		Decodes a base64-encoded PNG frame, resizes it, pads it to be codec-compatible,
+		and appends it to the video.
+		"""
+		if not self._writer:
 			return
 
 		try:
@@ -130,6 +159,13 @@ class VideoRecorderService:
 		"""
 		if not self._is_active or not self._writer:
 			return
+
+		logger.debug('Stopping video recorder...')
+		self._stop_event.set()
+
+		# Wait for the thread to finish processing remaining frames
+		if self._thread.is_alive():
+			self._thread.join()
 
 		try:
 			self._writer.close()
