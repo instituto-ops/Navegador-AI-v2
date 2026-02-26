@@ -33,6 +33,14 @@ class LogicExecutor:
 				base_url='https://openrouter.ai/api/v1'
 			)
 
+		if model_name.startswith('google/'):
+			from langchain_google_genai import ChatGoogleGenerativeAI
+			api_key = os.getenv('JULES_API_KEY')
+			return ChatGoogleGenerativeAI(
+				model=model_name.replace('google/', ''),
+				api_key=api_key
+			)
+
 		return ChatOpenAI(model=model_name)
 
 	async def execute_step(self, step: dict[str, Any]) -> dict[str, Any]:

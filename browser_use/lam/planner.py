@@ -36,6 +36,18 @@ class CognitivePlanner:
 				base_url='https://openrouter.ai/api/v1',
 				temperature=temp
 			)
+			
+		if model_name.startswith('google/'):
+			from langchain_google_genai import ChatGoogleGenerativeAI
+			api_key = os.getenv('JULES_API_KEY')
+			if not api_key:
+				print('[WARN] JULES_API_KEY not found in .env')
+			# e.g., google/gemini-1.5-pro
+			return ChatGoogleGenerativeAI(
+				model=model_name.replace('google/', ''),
+				api_key=api_key,
+				temperature=temp
+			)
 
 		# Normal OpenAI or other providers using OpenAI protocol
 		return ChatOpenAI(model=model_name, temperature=temp)

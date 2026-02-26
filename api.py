@@ -169,6 +169,9 @@ async def run_agent(request: CommandRequest):
 					await queue.put({'type': 'info', 'message': '💎 Usando Puter (Gemini 2.0 Luxury Fallback)...', 'elapsed': 0})
 				elif request.model == 'vision':
 					model_name = 'gpt-4o' # Primary vision model
+				elif request.model == 'jules':
+					model_name = 'google/gemini-1.5-pro'
+					await queue.put({'type': 'info', 'message': '💎 Conectando Cérebro VIP (Gemini 1.5 Pro via Jules API)...', 'elapsed': 0})
 				elif request.model == 'auto':
 					# Attempt to use primary model from .env if auto is selected
 					primary = os.getenv('PRIMARY_MODEL', 'groq')
