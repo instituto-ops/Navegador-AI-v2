@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import tempfile
@@ -841,7 +842,7 @@ class BrowserProfile(BrowserConnectArgs, BrowserLaunchPersistentContextArgs, Bro
 
 		self.user_data_dir = temp_dir
 
-	def get_args(self) -> list[str]:
+	async def get_args(self) -> list[str]:
 		"""Get the list of all Chrome CLI launch args for this profile (compiled from defaults, user-provided, and system-specific)."""
 
 		if isinstance(self.ignore_default_args, list):
@@ -873,7 +874,7 @@ class BrowserProfile(BrowserConnectArgs, BrowserLaunchPersistentContextArgs, Bro
 				if self.window_position
 				else []
 			),
-			*(self._get_extension_args() if self.enable_default_extensions else []),
+			*(await self._get_extension_args() if self.enable_default_extensions else []),
 		]
 
 		# Proxy flags
@@ -921,9 +922,9 @@ class BrowserProfile(BrowserConnectArgs, BrowserLaunchPersistentContextArgs, Bro
 
 		return final_args_list
 
-	def _get_extension_args(self) -> list[str]:
+	async def _get_extension_args(self) -> list[str]:
 		"""Get Chrome args for enabling default extensions (ad blocker and cookie handler)."""
-		extension_paths = self._ensure_default_extensions_downloaded()
+		extension_paths = await self._ensure_default_extensions_downloaded()
 
 		args = [
 			'--enable-extensions',
@@ -937,7 +938,7 @@ class BrowserProfile(BrowserConnectArgs, BrowserLaunchPersistentContextArgs, Bro
 
 		return args
 
-	def _ensure_default_extensions_downloaded(self) -> list[str]:
+	async def _ensure_default_extensions_downloaded(self) -> list[str]:
 		"""
 		Ensure default extensions are downloaded and cached locally.
 		Returns list of paths to extension directories.
@@ -1007,13 +1008,13 @@ class BrowserProfile(BrowserConnectArgs, BrowserLaunchPersistentContextArgs, Bro
 				# Download extension if not cached
 				if not crx_file.exists():
 					logger.info(f'📦 Downloading {ext["name"]} extension...')
-					self._download_extension(ext['url'], crx_file)
+					await self._download_extension(ext['url'], crx_file)
 				else:
 					logger.debug(f'📦 Found cached {ext["name"]} .crx file')
 
 				# Extract extension
 				logger.info(f'📂 Extracting {ext["name"]} extension...')
-				self._extract_extension(crx_file, ext_dir)
+				await asyncio.to_thread(self._extract_extension, crx_file, ext_dir)
 
 				extension_paths.append(str(ext_dir))
 				loaded_extension_names.append(ext['name'])
@@ -1025,7 +1026,7 @@ class BrowserProfile(BrowserConnectArgs, BrowserLaunchPersistentContextArgs, Bro
 		# Apply minimal patch to cookie extension with configurable whitelist
 		for i, path in enumerate(extension_paths):
 			if loaded_extension_names[i] == "I still don't care about cookies":
-				self._apply_minimal_extension_patch(Path(path), self.cookie_whitelist_domains)
+				await asyncio.to_thread(self._apply_minimal_extension_patch, Path(path), self.cookie_whitelist_domains)
 
 		if extension_paths:
 			logger.debug(f'[BrowserProfile] 🧩 Extensions loaded ({len(extension_paths)}): [{", ".join(loaded_extension_names)}]')
@@ -1098,14 +1099,17 @@ async function initialize(checkInitialized, magic) {{
 		except Exception as e:
 			logger.debug(f'[BrowserProfile] Could not patch extension storage: {e}')
 
-	def _download_extension(self, url: str, output_path: Path) -> None:
+	async def _download_extension(self, url: str, output_path: Path) -> None:
 		"""Download extension .crx file."""
-		import urllib.request
+		import aiohttp
 
 		try:
-			with urllib.request.urlopen(url) as response:
-				with open(output_path, 'wb') as f:
-					f.write(response.read())
+			async with aiohttp.ClientSession() as session:
+				async with session.get(url) as response:
+					response.raise_for_status()
+					content = await response.read()
+					with open(output_path, 'wb') as f:
+						f.write(content)
 		except Exception as e:
 			raise Exception(f'Failed to download extension: {e}')
 

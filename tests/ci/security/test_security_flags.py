@@ -2,24 +2,27 @@
 
 import tempfile
 
+import pytest
+
 from browser_use.browser.profile import BrowserProfile
 
 
+@pytest.mark.asyncio
 class TestBrowserProfileDisableSecurity:
 	"""Test disable_security flag behavior."""
 
-	def test_disable_security_preserves_extension_features(self):
+	async def test_disable_security_preserves_extension_features(self):
 		"""Test that disable_security=True doesn't break extension features by properly merging --disable-features flags."""
 
 		# Test with disable_security=False (baseline)
 		profile_normal = BrowserProfile(disable_security=False, user_data_dir=tempfile.mkdtemp(prefix='test-normal-'))
 		profile_normal.detect_display_configuration()
-		args_normal = profile_normal.get_args()
+		args_normal = await profile_normal.get_args()
 
 		# Test with disable_security=True
 		profile_security_disabled = BrowserProfile(disable_security=True, user_data_dir=tempfile.mkdtemp(prefix='test-security-'))
 		profile_security_disabled.detect_display_configuration()
-		args_security_disabled = profile_security_disabled.get_args()
+		args_security_disabled = await profile_security_disabled.get_args()
 
 		# Extract disable-features args
 		def extract_disable_features(args):
@@ -58,7 +61,7 @@ class TestBrowserProfileDisableSecurity:
 		missing_normal_features = features_normal - features_security_disabled
 		assert not missing_normal_features, f'Normal features missing from security disabled profile: {missing_normal_features}'
 
-	def test_disable_features_flag_deduplication(self):
+	async def test_disable_features_flag_deduplication(self):
 		"""Test that duplicate --disable-features values are properly deduplicated."""
 
 		profile = BrowserProfile(
@@ -68,7 +71,7 @@ class TestBrowserProfileDisableSecurity:
 			args=['--disable-features=TestFeature1,TestFeature2', '--disable-features=TestFeature2,TestFeature3'],
 		)
 		profile.detect_display_configuration()
-		args = profile.get_args()
+		args = await profile.get_args()
 
 		# Extract disable-features args
 		disable_features_args = [arg for arg in args if arg.startswith('--disable-features=')]

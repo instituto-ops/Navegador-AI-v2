@@ -104,7 +104,7 @@ class LocalBrowserWatchdog(BaseWatchdog):
 		for attempt in range(max_retries):
 			try:
 				# Get launch args from profile
-				launch_args = profile.get_args()
+				launch_args = await profile.get_args()
 
 				# Add debugging port
 				debug_port = self._find_free_port()

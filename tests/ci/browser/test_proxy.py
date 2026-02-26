@@ -8,7 +8,8 @@ from browser_use.browser.profile import ProxySettings
 from browser_use.config import CONFIG
 
 
-def test_chromium_args_include_proxy_flags():
+@pytest.mark.asyncio
+async def test_chromium_args_include_proxy_flags():
 	profile = BrowserProfile(
 		headless=True,
 		user_data_dir=str(CONFIG.BROWSER_USE_PROFILES_DIR / 'proxy-smoke'),
@@ -17,7 +18,7 @@ def test_chromium_args_include_proxy_flags():
 			bypass='localhost,127.0.0.1',
 		),
 	)
-	args = profile.get_args()
+	args = await profile.get_args()
 	assert any(a == '--proxy-server=http://proxy.local:8080' for a in args), args
 	assert any(a == '--proxy-bypass-list=localhost,127.0.0.1' for a in args), args
 
