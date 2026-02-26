@@ -6,6 +6,7 @@ import time
 import logging
 import json
 import os
+import aiofiles
 from dotenv import load_dotenv
 from fastapi.responses import StreamingResponse
 
@@ -234,8 +235,8 @@ class SSELogHandler(logging.Handler):
 async def save_logs(request: dict):
     try:
         content = request.get("logs", "")
-        with open("last_session_logs.txt", "w", encoding="utf-8") as f:
-            f.write(content)
+        async with aiofiles.open("last_session_logs.txt", "w", encoding="utf-8") as f:
+            await f.write(content)
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -253,8 +254,8 @@ async def list_reports():
 async def get_report(filename: str):
     try:
         path = os.path.join("reports", filename)
-        with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
+        async with aiofiles.open(path, "r", encoding="utf-8") as f:
+            content = await f.read()
         return {"content": content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
