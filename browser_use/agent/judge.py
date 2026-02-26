@@ -1,10 +1,12 @@
 """Judge system for evaluating browser-use agent execution traces."""
 
+import asyncio
 import base64
 import logging
-from pathlib import Path
 from typing import Literal
 
+import aiofiles
+import aiofiles.os
 from browser_use.llm.messages import (
 	BaseMessage,
 	ContentPartImageParam,
@@ -17,14 +19,14 @@ from browser_use.llm.messages import (
 logger = logging.getLogger(__name__)
 
 
-def _encode_image(image_path: str) -> str | None:
+async def _encode_image(image_path: str) -> str | None:
 	"""Encode image to base64 string."""
 	try:
-		path = Path(image_path)
-		if not path.exists():
+		if not await aiofiles.os.path.exists(image_path):
 			return None
-		with open(path, 'rb') as f:
-			return base64.b64encode(f.read()).decode('utf-8')
+		async with aiofiles.open(image_path, 'rb') as f:
+			content = await f.read()
+			return base64.b64encode(content).decode('utf-8')
 	except Exception as e:
 		logger.warning(f'Failed to encode image {image_path}: {e}')
 		return None
@@ -40,7 +42,7 @@ def _truncate_text(text: str, max_length: int, from_beginning: bool = False) -> 
 		return text[: max_length - 23] + '...[text truncated]...'
 
 
-def construct_judge_messages(
+async def construct_judge_messages(
 	task: str,
 	final_result: str,
 	agent_steps: list[str],
@@ -75,8 +77,10 @@ def construct_judge_messages(
 		selected_screenshots = screenshot_paths[-max_images:] if len(screenshot_paths) > max_images else screenshot_paths
 
 		# Encode screenshots
-		for img_path in selected_screenshots:
-			encoded = _encode_image(img_path)
+		tasks = [_encode_image(img_path) for img_path in selected_screenshots]
+		results = await asyncio.gather(*tasks)
+
+		for encoded in results:
 			if encoded:
 				encoded_images.append(
 					ContentPartImageParam(

@@ -1534,7 +1534,7 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 		screenshot_paths = [p for p in self.history.screenshot_paths() if p is not None]
 
 		# Construct input messages for judge evaluation
-		input_messages = construct_judge_messages(
+		input_messages = await construct_judge_messages(
 			task=task,
 			final_result=final_result,
 			agent_steps=agent_steps,
