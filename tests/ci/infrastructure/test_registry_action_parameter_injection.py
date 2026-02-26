@@ -291,47 +291,62 @@ class TestBrowserContext:
 		)
 		assert base_url in non_blank_tabs[0].url, 'The remaining tab should be the home page'
 
-	# TODO: highlighting doesn't exist anymore
-	# @pytest.mark.asyncio
-	# async def test_remove_highlights(self, browser_session, base_url):
-	# 	"""Test that remove_highlights successfully removes highlight elements."""
-	# 	# Navigate to a test page
-	# 	from browser_use.browser.events import NavigateToUrlEvent; event = browser_session.event_bus.dispatch(NavigateToUrlEvent(url=f'{base_url}/')
+	@pytest.mark.asyncio
+	async def test_remove_highlights(self, browser_session, base_url):
+		"""Test that remove_highlights successfully removes highlight elements."""
+		# Navigate to a test page
+		from browser_use.browser.events import NavigateToUrlEvent
 
-	# 	# Add a highlight via JavaScript
-	# 	await browser_session.execute_javascript("""
-	#         const container = document.createElement('div');
-	#         container.id = 'playwright-highlight-container';
-	#         document.body.appendChild(container);
+		event = browser_session.event_bus.dispatch(NavigateToUrlEvent(url=f'{base_url}/'))
+		await event
 
-	#         const highlight = document.createElement('div');
-	#         highlight.id = 'playwright-highlight-1';
-	#         container.appendChild(highlight);
+		# Get CDP session
+		cdp_session = await browser_session.get_or_create_cdp_session()
 
-	#         const element = document.querySelector('h1');
-	#         element.setAttribute('browser-user-highlight-id', 'playwright-highlight-1');
-	#     """)
+		# Add a highlight via JavaScript (using current highlight implementation patterns)
+		await cdp_session.cdp_client.send.Runtime.evaluate(
+			params={
+				'expression': """
+				(function() {
+					const container = document.createElement('div');
+					container.id = 'browser-use-debug-highlights';
+					document.body.appendChild(container);
 
-	# 	# Verify the highlight container exists
-	# 	container_exists = await browser_session.execute_javascript(
-	# 		"document.getElementById('playwright-highlight-container') !== null"
-	# 	)
-	# 	assert container_exists, 'Highlight container should exist before removal'
+					const highlight = document.createElement('div');
+					highlight.setAttribute('data-browser-use-highlight', 'element');
+					container.appendChild(highlight);
+				})()
+				""",
+				'returnByValue': True,
+			},
+			session_id=cdp_session.session_id,
+		)
 
-	# 	# Call remove_highlights
-	# 	await browser_session.remove_highlights()
+		# Verify the highlight container and element exist
+		result = await cdp_session.cdp_client.send.Runtime.evaluate(
+			params={
+				'expression': "document.getElementById('browser-use-debug-highlights') !== null && document.querySelector('[data-browser-use-highlight]') !== null",
+				'returnByValue': True,
+			},
+			session_id=cdp_session.session_id,
+		)
+		assert result['result']['value'], 'Highlight container and element should exist before removal'
 
-	# 	# Verify the highlight container was removed
-	# 	container_exists_after = await browser_session.execute_javascript(
-	# 		"document.getElementById('playwright-highlight-container') !== null"
-	# 	)
-	# 	assert not container_exists_after, 'Highlight container should be removed'
+		# Ensure highlight_elements is enabled
+		browser_session.browser_profile.highlight_elements = True
 
-	# 	# Verify the highlight attribute was removed from the element
-	# 	attribute_exists = await browser_session.execute_javascript(
-	# 		"document.querySelector('h1').hasAttribute('browser-user-highlight-id')"
-	# 	)
-	# 	assert not attribute_exists, 'browser-user-highlight-id attribute should be removed'
+		# Call remove_highlights
+		await browser_session.remove_highlights()
+
+		# Verify the highlight container and element were removed
+		result_after = await cdp_session.cdp_client.send.Runtime.evaluate(
+			params={
+				'expression': "document.getElementById('browser-use-debug-highlights') !== null || document.querySelector('[data-browser-use-highlight]') !== null",
+				'returnByValue': True,
+			},
+			session_id=cdp_session.session_id,
+		)
+		assert not result_after['result']['value'], 'Highlight container and element should be removed'
 
 	@pytest.mark.asyncio
 	@pytest.mark.skip(reason='TODO: fix')
