@@ -46,6 +46,11 @@ class GroqMessageSerializer:
 		if isinstance(content, str):
 			return content
 
+		# If there are no images, return as string for better compatibility with Groq models
+		has_images = any(part.type == 'image_url' for part in content)
+		if not has_images:
+			return '\n'.join([part.text for part in content if part.type == 'text'])
+
 		serialized_parts: list[ChatCompletionContentPartTextParam | ChatCompletionContentPartImageParam] = []
 		for part in content:
 			if part.type == 'text':

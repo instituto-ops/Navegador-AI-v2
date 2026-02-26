@@ -758,10 +758,11 @@ class Tools(Generic[Context]):
 
 			# For local browsers, ensure the file exists and has content
 			if browser_session.is_local:
-				if not os.path.exists(params.path):
+				path_obj = anyio.Path(params.path)
+				if not await path_obj.exists():
 					msg = f'File {params.path} does not exist'
 					return ActionResult(error=msg)
-				file_size = os.path.getsize(params.path)
+				file_size = (await path_obj.stat()).st_size
 				if file_size == 0:
 					msg = f'File {params.path} is empty (0 bytes). The file may not have been saved correctly.'
 					return ActionResult(error=msg)
@@ -1670,7 +1671,8 @@ Context: {context}"""
 							long_term_memory=f'Failed to read: file path not allowed: {file_path}',
 						)
 
-					if not os.path.exists(file_path):
+					path_obj = anyio.Path(file_path)
+					if not await path_obj.exists():
 						return ActionResult(
 							extracted_content=f'Error: File not found: {file_path}',
 							long_term_memory='Failed to read: file not found',
@@ -2398,7 +2400,7 @@ class CodeAgentTools(Tools[Context]):
 						if file_content:
 							file_msg += f'\n\n{file_name}:\n{file_content}'
 							attachments.append(file_name)
-						elif os.path.exists(file_name):
+						elif await anyio.Path(file_name).exists():
 							# File exists on disk but not in FileSystem - just add to attachments
 							attachments.append(file_name)
 					if file_msg:
@@ -2411,7 +2413,7 @@ class CodeAgentTools(Tools[Context]):
 						file_content = file_system.display_file(file_name)
 						if file_content:
 							attachments.append(file_name)
-						elif os.path.exists(file_name):
+						elif await anyio.Path(file_name).exists():
 							attachments.append(file_name)
 
 			# Convert relative paths to absolute paths - handle both FileSystem-managed and regular files
@@ -2423,9 +2425,9 @@ class CodeAgentTools(Tools[Context]):
 				elif file_system.get_file(file_name):
 					# Managed by FileSystem
 					resolved_attachments.append(str(file_system.get_dir() / file_name))
-				elif os.path.exists(file_name):
+				elif await anyio.Path(file_name).exists():
 					# Regular file in current directory
-					resolved_attachments.append(os.path.abspath(file_name))
+					resolved_attachments.append(str(await anyio.Path(file_name).resolve()))
 				else:
 					# File doesn't exist, but include the path anyway for error visibility
 					resolved_attachments.append(str(file_system.get_dir() / file_name))
@@ -2489,7 +2491,7 @@ class CodeAgentTools(Tools[Context]):
 
 			# For local browsers, ensure the file exists on the local filesystem
 			if browser_session.is_local:
-				if not os.path.exists(params.path):
+				if not await anyio.Path(params.path).exists():
 					msg = f'File {params.path} does not exist'
 					return ActionResult(error=msg)
 

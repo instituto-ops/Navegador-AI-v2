@@ -29,7 +29,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={disabled}
-            placeholder={disabled ? "Agente em execução..." : "Comando para o Maestro (ex: 'Analise as campanhas do Google Ads')"}
+            placeholder={disabled ? "Agente em execução..." : "Commando para o Maestro (ex: 'Analise as campanhas do Google Ads')"}
             className="w-full bg-black/40 border border-neural-border rounded-lg py-3 pl-10 pr-4 text-sm text-white placeholder:text-neural-muted focus:outline-none focus:border-neural-accent/50 focus:ring-1 focus:ring-neural-accent/50 transition-all disabled:opacity-50"
           />
         </div>

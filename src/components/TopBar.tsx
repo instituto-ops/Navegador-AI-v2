@@ -25,6 +25,7 @@ export function TopBar({ agentState, activeLLM, currentUrl, selectedModel, onMod
   const models = [
     { id: 'auto', label: 'Auto (Cascata)', icon: Zap },
     { id: 'groq', label: 'Groq (Ultra-Rápido)', icon: Cpu },
+    { id: 'puter', label: 'Puter Luxury (Gemini 2.0)', icon: Zap },
     { id: 'vision', label: 'Vision / OCR (Coleta Visual)', icon: Eye },
     { id: 'smol', label: 'Smol (Local Ultra-Leve)', icon: Zap },
     { id: 'openrouter', label: 'Cloud Master (OR)', icon: Globe },
@@ -80,8 +81,8 @@ export function TopBar({ agentState, activeLLM, currentUrl, selectedModel, onMod
                 key={m.id}
                 onClick={() => onModelChange(m.id)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${active
-                    ? 'bg-neural-accent text-black'
-                    : 'text-neural-muted hover:text-neural-text'
+                  ? 'bg-neural-accent text-black'
+                  : 'text-neural-muted hover:text-neural-text'
                   }`}
                 title={m.label}
               >
