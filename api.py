@@ -204,6 +204,7 @@ async def run_agent(request: CommandRequest):
 								# Version 0.11.13 might have different state access
 								current_page = await browser_instance.get_current_page()
 								if current_page:
+									# type and full_page are keyword arguments
 									screenshot_b64 = await current_page.screenshot(type='jpeg', quality=50, full_page=False)
 									import base64
 
@@ -236,6 +237,7 @@ async def run_agent(request: CommandRequest):
 							# ROBUST PAGE EXTRACTION
 							current_page = await browser_instance.get_current_page()
 							if current_page:
+								# Access url directly without unnecessary attribute check if we know type
 								final_url = current_page.url
 						except Exception as e:
 							print(f'[DEBUG] Final URL extraction failed: {e}')
