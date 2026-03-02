@@ -53,6 +53,7 @@ dependencies = [
     "browser-use==0.11.13",
     "langchain>=1.2.10",
     "langchain-openai>=1.1.10",
+    "langchain-google-genai>=1.0.8",
     "langchain-ollama>=1.0.1",
     "langgraph>=1.0.9",
     "aiofiles>=24.1.0",
@@ -119,7 +120,7 @@ build-backend = "hatchling.build"
 
 [tool.codespell]
 ignore-words-list = "bu,wit,dont,cant,wont,re-use,re-used,re-using,re-usable,thats,doesnt,doubleclick,finaly,finalY,Auxiliar,Comando,sinal,Erro,comando,auxiliar,erro"
-skip = "*.json"
+skip = "*.json,docs/Marketing/*"
 
 [tool.ruff]
 line-length = 130

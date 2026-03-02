@@ -7,10 +7,10 @@ from langgraph.graph import END, StateGraph
 
 from browser_use import Browser
 from browser_use.lam.executor import LogicExecutor
+from browser_use.lam.intelligence import AgentStatus, HumanFeedback, NeuroInsights
 from browser_use.lam.planner import CognitivePlanner
 from browser_use.lam.summarizer import SemanticSummarizer
-from browser_use.lam.intelligence import AgentStatus, HumanFeedback, NeuroInsights
-from browser_use.llm.messages import BaseMessage, SystemMessage, UserMessage
+from browser_use.llm.messages import BaseMessage, UserMessage
 
 
 class AgentState(TypedDict):
@@ -62,7 +62,7 @@ class LAMOrchestrator:
 		def should_continue(state: AgentState) -> Literal['human_approval_gate', 'summarizer', '__end__']:
 			raw_index = state.get('current_step_index', 0)
 			current_index = int(cast(Any, raw_index)) if raw_index is not None else 0
-			
+
 			plan_list = state.get('plan')
 			if plan_list is None:
 				plan_list = []
@@ -78,10 +78,7 @@ class LAMOrchestrator:
 		workflow.add_conditional_edges('executor', should_continue)
 		workflow.add_edge('summarizer', END)
 
-		return workflow.compile(
-			checkpointer=MemorySaver(),
-			interrupt_before=['human_approval_gate']
-		)
+		return workflow.compile(checkpointer=MemorySaver(), interrupt_before=['human_approval_gate'])
 
 	async def planner_node(self, state: AgentState):
 		user_request = ''
@@ -93,11 +90,7 @@ class LAMOrchestrator:
 
 		print(f'[LAM] Planning task: {user_request}')
 		plan_result = await self.planner.plan_task(user_request)
-		return {
-			'plan': plan_result,
-			'current_step_index': state.get('current_step_index', 0),
-			'status': 'WAITING_APPROVAL'
-		}
+		return {'plan': plan_result, 'current_step_index': state.get('current_step_index', 0), 'status': 'WAITING_APPROVAL'}
 
 	async def human_approval_gate_node(self, state: AgentState):
 		print('[LAM] Human Approval Gate Reached. Waiting for feedback...')
@@ -107,7 +100,7 @@ class LAMOrchestrator:
 	async def executor_node(self, state: AgentState):
 		plan_val = state.get('plan')
 		plan = cast(List[Dict[str, Any]], plan_val) if plan_val is not None else []
-		
+
 		raw_index = state.get('current_step_index', 0)
 		current_index = int(cast(Any, raw_index)) if raw_index is not None else 0
 
@@ -135,9 +128,9 @@ class LAMOrchestrator:
 
 		results_val = state.get('results')
 		results = cast(List[Dict[str, Any]], results_val) if results_val is not None else []
-		
+
 		print(f'[LAM] Summarizing {len(results)} results')
-		summary = await self.summarizer.summarize_results(user_request, results)
+		summary = await self.summarizer.summarize_results(results, user_request)
 		return {'final_output': summary}
 
 	async def run(self, command: str):

@@ -10,6 +10,7 @@ import { ReasoningBar, ReasoningState } from './components/ReasoningBar';
 import { LogPanel } from './components/LogPanel';
 import { ReportsPanel } from './components/ReportsPanel';
 import { PuterDesktop } from './components/PuterDesktop';
+import { ModelProvider } from './services/modelProvider';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('BROWSER');
@@ -70,11 +71,7 @@ export default function App() {
     addLog('INFO', `[PUTER] Processando consulta neural...`);
 
     try {
-      // @ts-ignore
-      if (typeof puter === 'undefined') throw new Error('Puter.js não carregado');
-      // @ts-ignore
-      const response = await puter.ai.chat(query, { model: 'gpt-4o' });
-      const messageContent = typeof response === 'string' ? response : (response?.message?.content || 'Sem resposta');
+      const messageContent = await ModelProvider.processComplex(query);
 
       const aiLog = { id: Math.random().toString(36), message: messageContent, type: 'AI' };
       setPuterLogs(prev => [...prev, aiLog]);
