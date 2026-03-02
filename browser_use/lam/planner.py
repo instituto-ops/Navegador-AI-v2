@@ -80,7 +80,7 @@ class CognitivePlanner:
 
 		try:
 			response = await self.llm.ainvoke(messages)
-			content = response.completion
+			content = getattr(response, 'content', '') or getattr(response, 'completion', '')
 			if not isinstance(content, str):
 				content = str(content)
 
