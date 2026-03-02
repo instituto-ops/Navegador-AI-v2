@@ -1,7 +1,7 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from browser_use.llm import ChatGroq, ChatOllama, ChatOpenAI
-from browser_use.llm.messages import UserMessage, SystemMessage
+from browser_use.llm.messages import SystemMessage, UserMessage
 
 
 class SemanticSummarizer:
@@ -16,24 +16,24 @@ class SemanticSummarizer:
 	def _get_llm(self, model_name: str):
 		if model_name.startswith('ollama/'):
 			return ChatOllama(model=model_name.replace('ollama/', ''))
-		
+
 		if model_name.startswith('groq/'):
 			import os
+
 			api_key = os.getenv('GROQ_API_KEY')
 			return ChatGroq(model=model_name.replace('groq/', ''), api_key=api_key)
 
 		if model_name.startswith('openrouter/'):
 			import os
+
 			api_key = os.getenv('OPENROUTER_API_KEY')
 			return ChatOpenAI(
-				model=model_name.replace('openrouter/', ''),
-				api_key=api_key,
-				base_url='https://openrouter.ai/api/v1'
+				model=model_name.replace('openrouter/', ''), api_key=api_key, base_url='https://openrouter.ai/api/v1'
 			)
 
 		return ChatOpenAI(model=model_name)
 
-	async def summarize_results(self, results: List[Dict[str, Any]], user_query: str) -> str:
+	async def summarize_results(self, results: list[dict[str, Any]], user_query: str) -> str:
 		"""
 		Summarizes the execution results in the context of the user query.
 		"""
