@@ -9,15 +9,18 @@ from browser_use import Browser
 from browser_use.lam.executor import LogicExecutor
 from browser_use.lam.planner import CognitivePlanner
 from browser_use.lam.summarizer import SemanticSummarizer
+from browser_use.lam.intelligence import AgentStatus, HumanFeedback, NeuroInsights
 from browser_use.llm.messages import BaseMessage, SystemMessage, UserMessage
 
 
-# Define AgentState with Annotated for proper state merging/appending
 class AgentState(TypedDict):
 	messages: Annotated[List[BaseMessage], operator.add]
 	plan: Optional[List[Dict[str, Any]]]
 	current_step_index: int
 	results: Annotated[List[Dict[str, Any]], operator.add]
+	status: AgentStatus
+	neuro_insights: Optional[NeuroInsights]
+	human_feedback: Optional[HumanFeedback]
 
 
 class LAMOrchestrator:
@@ -39,15 +42,24 @@ class LAMOrchestrator:
 
 		# Nodes
 		workflow.add_node('planner', self.planner_node)
+		workflow.add_node('human_approval_gate', self.human_approval_gate_node)
 		workflow.add_node('executor', self.executor_node)
 		workflow.add_node('summarizer', self.summarizer_node)
 
 		# Edges
 		workflow.set_entry_point('planner')
-		workflow.add_edge('planner', 'executor')
+		workflow.add_edge('planner', 'human_approval_gate')
 
 		# Conditional Logic for Executor Loop
-		def should_continue(state: AgentState) -> Literal['executor', 'summarizer', '__end__']:
+		def should_execute(state: AgentState) -> Literal['executor', '__end__']:
+			feedback = state.get('human_feedback')
+			if feedback and not feedback.get('approved'):
+				return '__end__'
+			return 'executor'
+
+		workflow.add_conditional_edges('human_approval_gate', should_execute)
+
+		def should_continue(state: AgentState) -> Literal['human_approval_gate', 'summarizer', '__end__']:
 			raw_index = state.get('current_step_index', 0)
 			current_index = int(cast(Any, raw_index)) if raw_index is not None else 0
 			
@@ -59,14 +71,17 @@ class LAMOrchestrator:
 				return '__end__'
 
 			if current_index < len(plan_list):
-				return 'executor'
+				return 'human_approval_gate'
 			else:
 				return 'summarizer'
 
 		workflow.add_conditional_edges('executor', should_continue)
 		workflow.add_edge('summarizer', END)
 
-		return workflow.compile(checkpointer=MemorySaver())
+		return workflow.compile(
+			checkpointer=MemorySaver(),
+			interrupt_before=['human_approval_gate']
+		)
 
 	async def planner_node(self, state: AgentState):
 		user_request = ''
@@ -78,7 +93,16 @@ class LAMOrchestrator:
 
 		print(f'[LAM] Planning task: {user_request}')
 		plan_result = await self.planner.plan_task(user_request)
-		return {'plan': plan_result, 'current_step_index': 0}
+		return {
+			'plan': plan_result,
+			'current_step_index': state.get('current_step_index', 0),
+			'status': 'WAITING_APPROVAL'
+		}
+
+	async def human_approval_gate_node(self, state: AgentState):
+		print('[LAM] Human Approval Gate Reached. Waiting for feedback...')
+		# Default behavior just ensures state captures that it is no longer waiting
+		return {'status': 'EXECUTING'}
 
 	async def executor_node(self, state: AgentState):
 		plan_val = state.get('plan')
@@ -126,6 +150,9 @@ class LAMOrchestrator:
 			'plan': [],
 			'current_step_index': 0,
 			'results': [],
+			'status': 'PLANNING',
+			'neuro_insights': None,
+			'human_feedback': None,
 		}
 
 		async for event in self.graph.astream(initial_state, config=config):
