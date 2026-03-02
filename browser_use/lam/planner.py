@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict, List
 
 from browser_use.llm import ChatGroq, ChatOllama, ChatOpenAI
-from browser_use.llm.messages import UserMessage, SystemMessage
+from browser_use.llm.messages import SystemMessage, UserMessage
 
 
 class CognitivePlanner:
@@ -21,7 +21,7 @@ class CognitivePlanner:
 
 		if model_name.startswith('ollama/'):
 			return ChatOllama(model=model_name.replace('ollama/', ''))
-		
+
 		if model_name.startswith('groq/'):
 			api_key = os.getenv('GROQ_API_KEY')
 			if not api_key:
@@ -34,20 +34,17 @@ class CognitivePlanner:
 				model=model_name.replace('openrouter/', ''),
 				api_key=api_key,
 				base_url='https://openrouter.ai/api/v1',
-				temperature=temp
+				temperature=temp,
 			)
-			
+
 		if model_name.startswith('google/'):
-			from langchain_google_genai import ChatGoogleGenerativeAI
 			api_key = os.getenv('JULES_API_KEY')
 			if not api_key:
 				print('[WARN] JULES_API_KEY not found in .env')
 			# e.g., google/gemini-1.5-pro
-			return ChatGoogleGenerativeAI(
-				model=model_name.replace('google/', ''),
-				api_key=api_key,
-				temperature=temp
-			)
+			from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
+
+			return ChatGoogleGenerativeAI(model=model_name.replace('google/', ''), api_key=api_key, temperature=temp)
 
 		# Normal OpenAI or other providers using OpenAI protocol
 		return ChatOpenAI(model=model_name, temperature=temp)
@@ -94,7 +91,7 @@ class CognitivePlanner:
 					content = parts[1].strip()
 				else:
 					content = content.strip()
-			
+
 			# Strip any potential leading/trailing garbage
 			content = content.strip().lstrip('`').rstrip('`').strip()
 
@@ -103,6 +100,7 @@ class CognitivePlanner:
 			except json.JSONDecodeError:
 				# Try to find something that looks like a JSON list
 				import re
+
 				match = re.search(r'\[.*\]', content, re.DOTALL)
 				if match:
 					plan = json.loads(match.group(0))
@@ -110,8 +108,8 @@ class CognitivePlanner:
 					raise
 
 			if not isinstance(plan, list):
-				raise ValueError("Plan must be a list of steps")
-				
+				raise ValueError('Plan must be a list of steps')
+
 			return plan
 		except Exception as e:
 			print(f'[LAM] Error generating plan: {e}. Raw content: {content if "content" in locals() else "N/A"}')
