@@ -2,7 +2,7 @@ import React from 'react';
 import { Activity, Brain, MousePointer2, AlertCircle, Zap, Cpu, Globe, HardDrive, Square, Eye, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export type AgentState = 'IDLE' | 'THINKING' | 'ACTING' | 'ERROR';
+export type AgentState = 'IDLE' | 'THINKING' | 'ACTING' | 'ERROR' | 'OBSERVING' | 'SYNTHESIZING';
 
 interface TopBarProps {
   agentState: AgentState;
